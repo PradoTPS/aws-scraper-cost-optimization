@@ -11,6 +11,10 @@
     "url": "https://github.com/PradoTPS/aws-scraper-cost-optimization/issues"
   },
   "homepage": "https://github.com/PradoTPS/aws-scraper-cost-optimization#readme",
+
+  "dependencies": {
+    "serverless-iam-roles-per-function": "3.2.0"
+  },
   "devDependencies": {
     "serverless-bundle": "5.0.2"
   }

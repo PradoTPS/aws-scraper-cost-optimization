@@ -2,6 +2,7 @@ service: aws-scraper-cost-optimization
 
 plugins:
   - serverless-bundle
+  - serverless-iam-roles-per-function
 
 provider:
   name: aws
