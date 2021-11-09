@@ -1,6 +1,6 @@
 import logger from 'loglevel';
 
-import crawlersTypes from 'Crawlers';
+import CrawlersTypes from 'Crawlers';
 import { InvalidInputError } from 'Utils/errors';
 
 /**
@@ -22,15 +22,16 @@ export async function main (event) {
 
   if (!type || !name) throw new InvalidInputError('Event must have type and name properties');
 
-  const crawlers = crawlersTypes[type];
+  const Crawlers = CrawlersTypes[type];
 
-  if (!crawlers) throw new InvalidInputError(`Crawler's type ${type} does not exists`);
+  if (!Crawlers) throw new InvalidInputError(`Crawler's type ${type} does not exists`);
 
-  const crawler = crawlers[name];
+  const Crawler = Crawlers[name];
 
-  if (!crawler) throw new InvalidInputError(`${name} is not a valid ${type} crawler`);
+  if (!Crawler) throw new InvalidInputError(`${name} is not a valid ${type} crawler`);
 
-  const result = await crawler(informations);
+  const crawler = new Crawler(informations);
+  const result = crawler.crawl();
 
   return {
     message: 'Crawler successfully finished',

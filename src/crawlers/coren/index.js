@@ -1,5 +1,5 @@
-import rj from './rj';
+import sp from './sp';
 
 export default {
-  rj,
+  sp,
 };
