@@ -1,0 +1,11 @@
+service: aws-scraper-cost-optimization
+
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+
+functions:
+  hello:
+    handler: handler.hello
