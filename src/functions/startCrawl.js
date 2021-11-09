@@ -1,4 +1,5 @@
 import logger from 'loglevel';
+
 import crawlersTypes from 'Crawlers';
 import { InvalidInputError } from 'Utils/errors';
 

@@ -1,5 +1,6 @@
-# package directories
+# Package directories
 node_modules
+.webpack
 
 # Serverless directories
 .serverless
