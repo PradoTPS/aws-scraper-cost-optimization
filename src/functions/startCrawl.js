@@ -31,7 +31,7 @@ export async function main (event) {
   if (!Crawler) throw new InvalidInputError(`${name} is not a valid ${type} crawler`);
 
   const crawler = new Crawler(informations);
-  const result = crawler.crawl();
+  const result = await crawler.crawl();
 
   return {
     message: 'Crawler successfully finished',

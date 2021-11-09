@@ -1,8 +1,10 @@
 import logger from 'loglevel';
+import puppeteer from 'puppeteer';
+
 import { InvalidInputError } from 'Utils/errors';
 
 export default class {
-  url = 'teste';
+  url = 'https://portal.coren-sp.gov.br/consulta-de-inscritos/';
 
   constructor(informations) {
     const {
@@ -19,6 +21,24 @@ export default class {
 
     logger.info('Started COREN SP crawler', { registrationNumber });
 
-    return true;
+    const browser = await puppeteer.launch({ headless: true });
+
+    const page = await browser.newPage();
+
+    await page.goto(this.url, { waitUntil: 'networkidle2' });
+
+    await page.click('input[name="tipo_pesquisa"][value="inscricao"]');
+    await page.type('input[name="texto_pesquisa"]', registrationNumber);
+
+    await Promise.all([
+      page.click('button.button--primary.button--large.button--block'),
+      page.waitForNavigation({ waitUntil: 'networkidle2' })
+    ]);
+
+    const html = await page.content();
+
+    await browser.close();
+
+    return html;
   }
 };

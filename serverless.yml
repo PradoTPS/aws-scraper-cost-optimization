@@ -14,6 +14,8 @@ provider:
 custom:
   bundle:
     linting: true # Enable linting as a part of the build process
+    externals:
+      - puppeteer # Needs to be forced included because chromium is downloaded inside package folder
     aliases: # Create an alias to 'import' modules easily with a custom path
       - Utils: src/utils
       - Crawlers: src/crawlers
