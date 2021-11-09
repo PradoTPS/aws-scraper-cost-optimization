@@ -1,0 +1,17 @@
+{
+  "name": "aws-scraper-cost-optimization",
+  "description": "Project designed to test cost optimization solutions for crawling using AWS",
+  "author": "Matheus Marotti e Thiago do Prado",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PradoTPS/aws-scraper-cost-optimization.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PradoTPS/aws-scraper-cost-optimization/issues"
+  },
+  "homepage": "https://github.com/PradoTPS/aws-scraper-cost-optimization#readme",
+  "devDependencies": {
+    "serverless-bundle": "5.0.2"
+  }
+}

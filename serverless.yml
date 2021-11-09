@@ -5,7 +5,10 @@ plugins:
 
 provider:
   name: aws
+  region: us-east-1
+  profile: matheus-thiago-tcc
   runtime: nodejs14.x
+  lambdaHashingVersion: 20201221
 
 functions:
   hello:
