@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    // Configuration so that intelisense will deal with aliases
+    "paths": {
+      "Crawlers": ["./src/crawlers"],
+      "Utils": ["./src/utils"]
+    }
+  }
+}

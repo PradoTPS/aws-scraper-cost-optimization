@@ -11,6 +11,13 @@ provider:
   runtime: nodejs14.x
   lambdaHashingVersion: 20201221
 
+custom:
+  bundle:
+    linting: true # Enable linting as a part of the build process
+    aliases: # Create an alias to 'import' modules easily with a custom path
+      - Utils: src/utils
+      - Crawlers: src/crawlers
+
 functions:
-  hello:
-    handler: handler.hello
+  StartCrawl:
+    handler: src/functions/startCrawl.main

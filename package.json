@@ -11,8 +11,9 @@
     "url": "https://github.com/PradoTPS/aws-scraper-cost-optimization/issues"
   },
   "homepage": "https://github.com/PradoTPS/aws-scraper-cost-optimization#readme",
-
   "dependencies": {
+    "loglevel": "^1.7.1",
+    "puppeteer": "^11.0.0",
     "serverless-iam-roles-per-function": "3.2.0"
   },
   "devDependencies": {
