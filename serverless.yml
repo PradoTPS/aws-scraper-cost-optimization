@@ -15,6 +15,7 @@ custom:
   bundle:
     linting: true # Enable linting as a part of the build process
     forceExclude:
+      - aws-sdk # Because it has been already  provided by AWS Cloud environment
       - chrome-aws-lambda # Because it'll be provided through a Lambda Layer
     aliases: # Create an alias to 'import' modules easily with a custom path
       - Utils: src/utils
@@ -28,6 +29,8 @@ functions:
     # Using a public chrome-aws-lambda layer available at https://github.com/shelfio/chrome-aws-lambda-layer by shelfio
     layers:
       - arn:aws:lambda:${self:provider.region}:764866452798:layer:chrome-aws-lambda:25
+    environment:
+      CRAWL_RESULT_BUCKET: !Ref CrawlResultBucket
 
 resources:
   - ${file(sls/resources/s3/crawlResultBucket.yml)}

@@ -1,7 +1,27 @@
 import logger from 'loglevel';
+import { S3 } from 'aws-sdk';
 
 import CrawlersTypes from 'Crawlers';
 import { InvalidInputError } from 'Utils/errors';
+
+const saveResultInS3 = async (result, { type, name }) => {
+  const {
+    CRAWL_RESULT_BUCKET,
+  } = process.env;
+
+  const s3 = new S3();
+  const resultS3Path = `${type}/${name}/${Date.now()}`;
+
+  await s3.putObject({
+    ACL: 'private',
+    Bucket: CRAWL_RESULT_BUCKET,
+    Key: resultS3Path,
+    Body: result,
+    ContentType: 'text/html',
+  }).promise();
+
+  return `https://${CRAWL_RESULT_BUCKET}.s3.amazonaws.com/${resultS3Path}`;
+};
 
 /**
 * @description Function responsible for calling specific crawler based on type and regionality
@@ -33,8 +53,10 @@ export async function main (event) {
   const crawler = new Crawler(informations);
   const result = await crawler.crawl();
 
+  const resultS3Url = await saveResultInS3(result, { type, name });
+
   return {
     message: 'Crawler successfully finished',
-    result,
+    resultS3Url,
   };
 };
