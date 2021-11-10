@@ -14,8 +14,8 @@ provider:
 custom:
   bundle:
     linting: true # Enable linting as a part of the build process
-    externals:
-      - puppeteer # Needs to be forced included because chromium is downloaded inside package folder
+    forceExclude:
+      - chrome-aws-lambda # Because it'll be provided through a Lambda Layer
     aliases: # Create an alias to 'import' modules easily with a custom path
       - Utils: src/utils
       - Crawlers: src/crawlers
@@ -23,3 +23,8 @@ custom:
 functions:
   StartCrawl:
     handler: src/functions/startCrawl.main
+    memorySize: 1536
+    timeout: 30
+    # Using a public chrome-aws-lambda layer available at https://github.com/shelfio/chrome-aws-lambda-layer by shelfio
+    layers:
+      - arn:aws:lambda:${self:provider.region}:764866452798:layer:chrome-aws-lambda:25

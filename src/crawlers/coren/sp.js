@@ -1,5 +1,5 @@
 import logger from 'loglevel';
-import puppeteer from 'puppeteer';
+import chromium from 'chrome-aws-lambda';
 
 import { InvalidInputError } from 'Utils/errors';
 
@@ -21,7 +21,11 @@ export default class {
 
     logger.info('Started COREN SP crawler', { registrationNumber });
 
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await chromium.puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
+    });
 
     const page = await browser.newPage();
 
