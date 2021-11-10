@@ -28,3 +28,6 @@ functions:
     # Using a public chrome-aws-lambda layer available at https://github.com/shelfio/chrome-aws-lambda-layer by shelfio
     layers:
       - arn:aws:lambda:${self:provider.region}:764866452798:layer:chrome-aws-lambda:25
+
+resources:
+  - ${file(sls/resources/s3/crawlResultBucket.yml)}
