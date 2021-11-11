@@ -22,15 +22,7 @@ custom:
       - Crawlers: src/crawlers
 
 functions:
-  StartCrawl:
-    handler: src/functions/startCrawl.main
-    memorySize: 1536
-    timeout: 30
-    # Using a public chrome-aws-lambda layer available at https://github.com/shelfio/chrome-aws-lambda-layer by shelfio
-    layers:
-      - arn:aws:lambda:${self:provider.region}:764866452798:layer:chrome-aws-lambda:25
-    environment:
-      CRAWL_RESULT_BUCKET: !Ref CrawlResultBucket
+  - ${file(sls/functions/startCrawl.yml)}
 
 resources:
   - ${file(sls/resources/s3/crawlResultBucket.yml)}
