@@ -26,4 +26,5 @@ functions:
 
 resources:
   - ${file(sls/resources/s3/crawlResultBucket.yml)}
+  - ${file(sls/resources/ec2/scraperSecurityGroup.yml)}
   - ${file(sls/resources/ec2/scraperInstance.yml)}
