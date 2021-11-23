@@ -3,13 +3,19 @@ import logger from 'loglevel';
 import chromium from 'chrome-aws-lambda';
 // import puppeteer from 'puppeteer';
 
+import { ConfigurationError } from 'Utils/errors';
+
 export default async function launchBrowser () {
   let executablePath;
 
   if (process.env.IS_LOCAL) {
     logger.info('Invoked locally, using local chrome');
 
-    executablePath = '/usr/bin/google-chrome-stable';
+    const { CHROME_PATH: path } = process.env;
+
+    if (!path) throw new ConfigurationError('Must export CHROME_PATH environment variable');
+
+    executablePath = process.env.CHROME_PATH;
   } else {
     logger.info('Invoked remotely, lauching chrome-aws-lambda pupputeer');
 
