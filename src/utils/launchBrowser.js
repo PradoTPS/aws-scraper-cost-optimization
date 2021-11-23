@@ -1,24 +1,24 @@
 import logger from 'loglevel';
 
 import chromium from 'chrome-aws-lambda';
-import puppeteer from 'puppeteer';
+// import puppeteer from 'puppeteer';
 
 export default async function launchBrowser () {
-  if (process.env.IS_LOCAL) {
-    logger.info('Invoked locally, lauching default pupputeer');
+  let executablePath;
 
-    return puppeteer.launch({
-      headless: true,
-      executablePath: '/usr/bin/google-chrome-stable',
-      args: ['--use-gl=egl'],
-    });
+  if (process.env.IS_LOCAL) {
+    logger.info('Invoked locally, using local chrome');
+
+    executablePath = '/usr/bin/google-chrome-stable';
   } else {
     logger.info('Invoked remotely, lauching chrome-aws-lambda pupputeer');
 
-    return chromium.puppeteer.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
-    });
+    executablePath = await chromium.executablePath;
   }
+
+  return chromium.puppeteer.launch({
+    args: chromium.args,
+    headless: chromium.headless,
+    executablePath,
+  });
 };
