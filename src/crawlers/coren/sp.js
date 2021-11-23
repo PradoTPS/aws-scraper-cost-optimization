@@ -1,7 +1,7 @@
 import logger from 'loglevel';
-import chromium from 'chrome-aws-lambda';
 
 import { InvalidInputError } from 'Utils/errors';
+import launchBrowser from 'Utils/launchBrowser';
 
 export default class {
   url = 'https://portal.coren-sp.gov.br/consulta-de-inscritos/';
@@ -21,11 +21,7 @@ export default class {
 
     logger.info('Started COREN SP crawler', { registrationNumber });
 
-    const browser = await chromium.puppeteer.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
-    });
+    const browser = await launchBrowser();
 
     const page = await browser.newPage();
 

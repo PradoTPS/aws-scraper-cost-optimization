@@ -4,7 +4,7 @@ import { S3 } from 'aws-sdk';
 import CrawlersTypes from 'Crawlers';
 import { InvalidInputError } from 'Utils/errors';
 
-const saveResultInS3 = async (result, { type, name }) => {
+async function saveResultInS3 (result, { type, name }) {
   const {
     CRAWL_RESULT_BUCKET,
   } = process.env;

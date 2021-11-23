@@ -12,12 +12,12 @@
   },
   "homepage": "https://github.com/PradoTPS/aws-scraper-cost-optimization#readme",
   "dependencies": {
-    "loglevel": "1.7.1"
+    "loglevel": "1.7.1",
+    "puppeteer": "11.0.0",
+    "chrome-aws-lambda": "10.1.0"
   },
   "devDependencies": {
-    "aws-sdk": "^2.1026.0",
-    "chrome-aws-lambda": "^10.1.0",
-    "puppeteer": "^11.0.0",
+    "aws-sdk": "2.1026.0",
     "serverless-bundle": "5.0.2",
     "serverless-iam-roles-per-function": "3.2.0"
   }
