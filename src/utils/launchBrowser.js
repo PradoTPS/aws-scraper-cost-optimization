@@ -9,6 +9,7 @@ export default async function launchBrowser () {
 
     return puppeteer.launch({
       headless: true,
+      executablePath: '/usr/bin/chromium'
     });
   } else {
     logger.info('Invoked remotely, lauching chrome-aws-lambda pupputeer');

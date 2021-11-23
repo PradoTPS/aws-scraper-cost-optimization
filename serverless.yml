@@ -17,8 +17,6 @@ custom:
     forceExclude:
       - aws-sdk # Because it has been already  provided by AWS Cloud environment
       - chrome-aws-lambda # Because it'll be provided through a Lambda Layer
-    externals:
-      - puppeteer # Needs to be forced included because chromium is downloaded inside package folder
     aliases: # Create an alias to 'import' modules easily with a custom path
       - Utils: src/utils
       - Crawlers: src/crawlers
