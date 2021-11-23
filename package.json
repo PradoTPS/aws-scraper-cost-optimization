@@ -13,7 +13,6 @@
   "homepage": "https://github.com/PradoTPS/aws-scraper-cost-optimization#readme",
   "dependencies": {
     "loglevel": "1.7.1",
-    "puppeteer": "11.0.0",
     "chrome-aws-lambda": "10.1.0"
   },
   "devDependencies": {

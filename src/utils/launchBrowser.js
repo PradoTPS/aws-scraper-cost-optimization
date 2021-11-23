@@ -1,7 +1,6 @@
 import logger from 'loglevel';
 
 import chromium from 'chrome-aws-lambda';
-// import puppeteer from 'puppeteer';
 
 import { ConfigurationError } from 'Utils/errors';
 
