@@ -23,12 +23,20 @@ export default class {
 
     const browser = await launchBrowser();
 
+    logger.info('Lauched browser');
+
     const page = await browser.newPage();
+
+    logger.info('Navigating', { url: this.url });
 
     await page.goto(this.url, { waitUntil: 'networkidle2' });
 
+    logger.info('Sending form', { registrationNumber });
+
     await page.click('input[name="tipo_pesquisa"][value="inscricao"]');
     await page.type('input[name="texto_pesquisa"]', registrationNumber);
+
+    logger.info('Waiting form response');
 
     await Promise.all([
       page.click('button.button--primary.button--large.button--block'),
@@ -36,6 +44,8 @@ export default class {
     ]);
 
     const html = await page.content();
+
+    logger.info('Fetched response', { response: html });
 
     await browser.close();
 
