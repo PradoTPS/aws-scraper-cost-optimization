@@ -5,3 +5,4 @@ Resources:
       FifoQueue: true
       QueueName: ${self:service}-crawl-queue.fifo # must end with .fifo suffix
       VisibilityTimeout: 600 # 10 minutes
+      ContentBasedDeduplication: false

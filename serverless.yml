@@ -10,6 +10,9 @@ provider:
   profile: matheus-thiago-tcc
   runtime: nodejs14.x
   lambdaHashingVersion: 20201221
+  environment:
+    QUEUE_URL: !Ref CrawlQueue
+    CRAWL_RESULT_BUCKET: !Ref CrawlResultBucket
 
 custom:
   bundle:
@@ -20,11 +23,13 @@ custom:
     aliases: # Create an alias to 'import' modules easily with a custom path
       - Utils: src/utils
       - Crawlers: src/crawlers
+      - Functions: src/functions
 
 functions:
   - ${file(sls/functions/startCrawl.yml)}
-  # Scripts, comment before deploy
+  # Scripts
   - ${file(sls/functions/scripts/populateQueue.yml)}
+  - ${file(sls/functions/scripts/consumeQueue.yml)}
 
 resources:
   # S3

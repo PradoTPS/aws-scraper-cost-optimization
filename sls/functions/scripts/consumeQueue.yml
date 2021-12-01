@@ -1,0 +1,2 @@
+ConsumeQueue:
+  handler: src/functions/scripts/consumeQueue.main
