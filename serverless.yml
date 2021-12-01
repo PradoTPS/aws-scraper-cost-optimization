@@ -23,8 +23,14 @@ custom:
 
 functions:
   - ${file(sls/functions/startCrawl.yml)}
+  # Scripts, comment before deploy
+  - ${file(sls/functions/scripts/populateQueue.yml)}
 
 resources:
+  # S3
   - ${file(sls/resources/s3/crawlResultBucket.yml)}
+  # EC2
   - ${file(sls/resources/ec2/scraperSecurityGroup.yml)}
   - ${file(sls/resources/ec2/scraperInstance.yml)}
+  # SQS
+  - ${file(sls/resources/sqs/crawlQueue.yml)}

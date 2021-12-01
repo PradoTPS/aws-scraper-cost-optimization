@@ -1,0 +1,4 @@
+PopulateQueue:
+  handler: scripts/populateQueue.main
+  environment:
+    queueUrl: !Ref CrawlQueue
