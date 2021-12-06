@@ -1,7 +1,7 @@
 import logger from 'loglevel';
 
-import { InvalidInputError } from 'Utils/errors';
 import launchBrowser from 'Utils/launchBrowser';
+import { InvalidInputError } from 'Utils/errors';
 
 export default class {
   url = 'https://portal.coren-sp.gov.br/consulta-de-inscritos/';
@@ -11,15 +11,15 @@ export default class {
       registrationNumber
     } = informations;
 
-    if (!registrationNumber) throw new InvalidInputError('Crawler must have registrationNumber information');
+    if (!registrationNumber) throw new InvalidInputError('Scraper must have registrationNumber information');
 
     this.informations = informations;
   }
 
-  async crawl(_browser) {
+  async scrap(_browser) {
     const registrationNumber = this.informations.registrationNumber;
 
-    logger.info('Started COREN SP crawler', { registrationNumber });
+    logger.info('Started COREN SP scraper', { registrationNumber });
 
     // use recieved browser or create new one
     const browser = _browser || await launchBrowser();

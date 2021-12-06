@@ -11,8 +11,8 @@ provider:
   runtime: nodejs14.x
   lambdaHashingVersion: 20201221
   environment:
-    QUEUE_URL: !Ref CrawlQueue
-    CRAWL_RESULT_BUCKET: !Ref CrawlResultBucket
+    SCRAPING_QUEUE_URL: !Ref ScrapingQueue
+    SCRAPING_RESULT_BUCKET: !Ref ScrapingResultBucket
 
 custom:
   bundle:
@@ -22,21 +22,21 @@ custom:
       - chrome-aws-lambda # Because it'll be provided through a Lambda Layer
     aliases: # Create an alias to 'import' modules easily with a custom path
       - Utils: src/utils
-      - Crawlers: src/crawlers
+      - Scrapers: src/scrapers
       - Functions: src/functions
 
 functions:
-  - ${file(sls/functions/startCrawl.yml)}
-  - ${file(sls/functions/startCrawlBatch.yml)}
+  - ${file(sls/functions/startScraping.yml)}
+  - ${file(sls/functions/startScrapingBatch.yml)}
   # Scripts
   - ${file(sls/functions/scripts/populateQueue.yml)}
   - ${file(sls/functions/scripts/consumeQueue.yml)}
 
 resources:
   # S3
-  - ${file(sls/resources/s3/crawlResultBucket.yml)}
+  - ${file(sls/resources/s3/scrapingResultBucket.yml)}
   # EC2
   - ${file(sls/resources/ec2/scraperSecurityGroup.yml)}
   - ${file(sls/resources/ec2/scraperInstance.yml)}
   # SQS
-  - ${file(sls/resources/sqs/crawlQueue.yml)}
+  - ${file(sls/resources/sqs/scrapingQueue.yml)}

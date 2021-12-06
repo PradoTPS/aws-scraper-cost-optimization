@@ -2,7 +2,7 @@ import logger from 'loglevel';
 import { SQS } from 'aws-sdk';
 
 import sleep from 'Utils/sleep';
-import { main as startCrawl } from 'Functions/startCrawl';
+import { main as startScraping } from 'Functions/startScraping';
 
 const sqs = new SQS({ apiVersion: '2012-11-05' });
 
@@ -13,31 +13,31 @@ async function processMessage(message) {
   } = message;
 
   try {
-    logger.info('Starting crawl proccess', { Body, ReceiptHandle });
+    logger.info('Starting scrap proccess', { Body, ReceiptHandle });
 
-    await startCrawl(JSON.parse(Body));
+    await startScraping(JSON.parse(Body));
 
-    logger.info('Crawl proccess finished, deleting message', { ReceiptHandle });
+    logger.info('Scrap proccess finished, deleting message', { ReceiptHandle });
 
-    await sqs.deleteMessage({ QueueUrl: process.env.QUEUE_URL, ReceiptHandle }).promise();
+    await sqs.deleteMessage({ QueueUrl: process.env.SCRAPING_QUEUE_URL, ReceiptHandle }).promise();
 
     logger.info('Message successfully processed', { ReceiptHandle });
 
     return true;
   } catch (error) {
-    logger.error('Couldn\'t start crawl process, message will return to queue after timeout', { error, ReceiptHandle });
+    logger.error('Couldn\'t start scrap process, message will return to queue after timeout', { error, ReceiptHandle });
   }
 }
 
 /**
-* @description Script function responsible for consuming CrawlQueue and running crawl
+* @description Script function responsible for consuming ScrapingQueue and running scraper
 * @command sls invoke local -f ConsumeQueue
 */
 export async function main () {
   logger.setLevel('info');
 
   while (true) {
-    const params = { QueueUrl: process.env.QUEUE_URL, MaxNumberOfMessages: 3 };
+    const params = { QueueUrl: process.env.SCRAPING_QUEUE_URL, MaxNumberOfMessages: 3 };
 
     logger.info('Fetching messages', { params });
 

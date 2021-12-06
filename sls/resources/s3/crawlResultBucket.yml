@@ -1,5 +1,0 @@
-Resources:
-  CrawlResultBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: ${self:service}-crawl-result

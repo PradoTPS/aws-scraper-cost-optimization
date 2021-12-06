@@ -8,7 +8,7 @@ async function sendMessage(message) {
 
   const params = {
     MessageBody: JSON.stringify(message),
-    QueueUrl: process.env.QUEUE_URL,
+    QueueUrl: process.env.SCRAPING_QUEUE_URL,
     MessageGroupId: uniqueId, // messages that belong to the same message group are processed in a FIFO manner (however, messages in different message groups might be processed out of order)
     MessageDeduplicationId: uniqueId
   };
@@ -19,7 +19,7 @@ async function sendMessage(message) {
 }
 
 /**
-* @description Script function responsible for populating CrawlQueue with test data
+* @description Script function responsible for populating ScrapingQueue with test data
 * @command sls invoke local -f PopulateQueue
 */
 export async function main () {

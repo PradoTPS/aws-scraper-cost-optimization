@@ -1,8 +1,8 @@
 Resources:
-  CrawlQueue:
+  ScrapingQueue:
     Type: AWS::SQS::Queue
     Properties: 
       FifoQueue: true
-      QueueName: ${self:service}-crawl-queue.fifo # must end with .fifo suffix
+      QueueName: ${self:service}-scraping-queue.fifo # must end with .fifo suffix
       VisibilityTimeout: 600 # 10 minutes
       ContentBasedDeduplication: false

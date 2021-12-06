@@ -1,6 +1,6 @@
 {
   "name": "aws-scraper-cost-optimization",
-  "description": "Project designed to test cost optimization solutions for crawling using AWS",
+  "description": "Project designed to test cost optimization solutions for scraping using AWS",
   "author": "Matheus Marotti e Thiago do Prado",
   "license": "ISC",
   "repository": {
