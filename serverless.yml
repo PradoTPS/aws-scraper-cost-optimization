@@ -27,6 +27,7 @@ custom:
 
 functions:
   - ${file(sls/functions/startCrawl.yml)}
+  - ${file(sls/functions/startCrawlBatch.yml)}
   # Scripts
   - ${file(sls/functions/scripts/populateQueue.yml)}
   - ${file(sls/functions/scripts/consumeQueue.yml)}

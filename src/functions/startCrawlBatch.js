@@ -1,45 +1,51 @@
 import logger from 'loglevel';
-import { S3 } from 'aws-sdk';
 
 import CrawlersTypes from 'Crawlers';
 
 import saveResult from 'Utils/saveResult';
+import launchBrowser from 'Utils/launchBrowser';
 import { InvalidInputError } from 'Utils/errors';
 
 /**
 * @description Function responsible for calling specific crawler based on type and regionality
 * @param {Object} event - Base lambda event
-* @param {String} event.type - Type of crawler that will be called
-* @param {String} event.name - Crawler name, options depends on crawler type (see crawler type specific folder)
-* @param {Object} event.informations - Crawling informations, options depends on crawler type (see crawler type specific folder)
-* @command sls invoke local -f StartCrawl -p tests/events/startCrawl.json
+* @param {Array.<{ type: String, name: String, informations: Object }>} event.entries - Array of entries to be crawled
+* @command sls invoke local -f StartCrawlBatch -p tests/events/startCrawlBatch.json
 */
 export async function main (event) {
   logger.setLevel('info');
 
-  const {
-    type,
-    name,
-    informations,
-  } = event;
+  const browser = await launchBrowser();
 
-  if (!type || !name) throw new InvalidInputError('Event must have type and name properties');
+  const promises = event.entries.map(
+    async (entry) => {
+      const {
+        type,
+        name,
+        informations,
+      } = entry;
 
-  const Crawlers = CrawlersTypes[type];
+      if (!type || !name) throw new InvalidInputError('Event must have type and name properties');
 
-  if (!Crawlers) throw new InvalidInputError(`Crawler's type ${type} does not exists`);
+      const Crawlers = CrawlersTypes[type];
 
-  const Crawler = Crawlers[name];
+      if (!Crawlers) throw new InvalidInputError(`Crawler's type ${type} does not exists`);
 
-  if (!Crawler) throw new InvalidInputError(`${name} is not a valid ${type} crawler`);
+      const Crawler = Crawlers[name];
 
-  const crawler = new Crawler(informations);
-  const result = await crawler.crawl();
+      if (!Crawler) throw new InvalidInputError(`${name} is not a valid ${type} crawler`);
 
-  const resultS3Url = await saveResult(result, process.env.CRAWL_RESULT_BUCKET, { type, name });
+      const crawler = new Crawler(informations);
 
-  return {
-    message: 'Crawler successfully finished',
-    resultS3Url,
-  };
+      const result = await crawler.crawl(browser);
+
+      const resultS3Url = await saveResult(result, process.env.CRAWL_RESULT_BUCKET, { type, name });
+
+      return resultS3Url;
+    }
+  );
+
+  await Promise.all(promises);
+
+  return true;
 };

@@ -16,14 +16,13 @@ export default class {
     this.informations = informations;
   }
 
-  async crawl() {
+  async crawl(_browser) {
     const registrationNumber = this.informations.registrationNumber;
 
     logger.info('Started COREN SP crawler', { registrationNumber });
 
-    const browser = await launchBrowser();
-
-    logger.info('Lauched browser');
+    // use recieved browser or create new one
+    const browser = _browser || await launchBrowser();
 
     const page = await browser.newPage();
 
@@ -47,7 +46,8 @@ export default class {
 
     logger.info('Fetched response', { response: html });
 
-    await browser.close();
+    // only close if browser is not recieved
+    if (!_browser) await browser.close();
 
     return html;
   }
