@@ -1,4 +1,5 @@
 import logger from 'loglevel';
+import { S3 } from 'aws-sdk';
 
 import CrawlersTypes from 'Crawlers';
 

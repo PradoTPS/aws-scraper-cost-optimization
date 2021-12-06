@@ -31,7 +31,7 @@ export async function main () {
     }
   };
 
-  const messages = Array.from({ length: 350 }, (_, index) =>  ({ body: defaultMessage, deduplicationId: index.toString() }) );
+  const messages = Array.from({ length: 50 }, (_, index) =>  ({ body: defaultMessage, deduplicationId: index.toString() }) );
 
   const promises = messages.map((message) => sendMessage(message.body));
 
