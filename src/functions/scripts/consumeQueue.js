@@ -2,30 +2,27 @@ import logger from 'loglevel';
 import { SQS } from 'aws-sdk';
 
 import sleep from 'Utils/sleep';
-import { main as startScraping } from 'Functions/startScraping';
+import { main as startScrapingBatch } from 'Functions/startScrapingBatch';
 
 const sqs = new SQS({ apiVersion: '2012-11-05' });
 
-async function processMessage(message) {
-  const {
-    Body,
-    ReceiptHandle,
-  } = message;
-
+async function processMessages(messages) {
   try {
-    logger.info('Starting scrap proccess', { Body, ReceiptHandle });
+    logger.info('Starting scrap proccess');
 
-    await startScraping(JSON.parse(Body));
+    const messagesBodies = messages.map(({ Body }) => JSON.parse(Body));
 
-    logger.info('Scrap proccess finished, deleting message', { ReceiptHandle });
+    await startScrapingBatch({ entries: messagesBodies });
 
-    await sqs.deleteMessage({ QueueUrl: process.env.SCRAPING_QUEUE_URL, ReceiptHandle }).promise();
+    logger.info('Scrap proccess finished, deleting messages');
 
-    logger.info('Message successfully processed', { ReceiptHandle });
+    for (const message of messages) await sqs.deleteMessage({ QueueUrl: process.env.SCRAPING_QUEUE_URL, ReceiptHandle: message.ReceiptHandle }).promise();
+
+    logger.info('Messages successfully processed');
 
     return true;
   } catch (error) {
-    logger.error('Couldn\'t start scrap process, message will return to queue after timeout', { error, ReceiptHandle });
+    logger.error('Couldn\'t start scrap process, message will return to queue after timeout', { error });
   }
 }
 
@@ -50,9 +47,7 @@ export async function main () {
     if (Messages.length) {
       logger.info('Fetched messages', { messagesNumber: Messages.length });
 
-      const promises = Messages.map((message) => processMessage(message));
-
-      await Promise.all(promises);
+      await processMessages(Messages);
     } else {
       logger.info('Queue is empty, waiting to try again', { messagesNumber: Messages.length });
 
