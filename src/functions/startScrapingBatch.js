@@ -44,7 +44,7 @@ export async function main (event) {
         response.resultUrl = await saveResult(result, process.env.SCRAPING_RESULT_BUCKET, { type, name });
         response.success = true;
       } catch (error) {
-        logger.error('Couldn\'t finish scrap process');
+        logger.error('Couldn\'t finish scrap process', error);
 
         response.success = false;
       }
