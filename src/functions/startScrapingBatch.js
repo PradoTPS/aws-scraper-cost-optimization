@@ -53,5 +53,9 @@ export async function main (event) {
     }
   );
 
-  return Promise.all(promises);
+  const results = await Promise.all(promises);
+
+  await browser.close();
+
+  return results;
 };
