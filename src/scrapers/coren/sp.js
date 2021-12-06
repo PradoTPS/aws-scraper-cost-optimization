@@ -44,7 +44,7 @@ export default class {
 
     const html = await page.content();
 
-    logger.info('Fetched response', { response: html });
+    logger.info('Fetched response');
 
     // only close if browser is not recieved
     if (!_browser) await browser.close();

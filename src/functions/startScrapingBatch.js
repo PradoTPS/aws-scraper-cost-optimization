@@ -9,7 +9,7 @@ import { InvalidInputError } from 'Utils/errors';
 /**
 * @description Function responsible for calling specific scraper based on type and regionality
 * @param {Object} event - Base lambda event
-* @param {Array.<{ type: String, name: String, informations: Object }>} event.entries - Array of entries to be scraped
+* @param {Array.<{ type: String, name: String, informations: Object, tags: Object }>} event.entries - Array of entries to be scraped
 * @command sls invoke local -f StartScrapingBatch -p tests/events/startScrapingBatch.json
 */
 export async function main (event) {
@@ -19,32 +19,39 @@ export async function main (event) {
 
   const promises = event.entries.map(
     async (entry) => {
-      const {
-        type,
-        name,
-        informations,
-      } = entry;
+      const response = entry;
 
-      if (!type || !name) throw new InvalidInputError('Event must have type and name properties');
+      try {
+        const {
+          type,
+          name,
+          informations,
+        } = entry;
 
-      const Scrapers = ScrapersTypes[type];
+        if (!type || !name) throw new InvalidInputError('Event must have type and name properties');
 
-      if (!Scrapers) throw new InvalidInputError(`Scrapers's type ${type} does not exists`);
+        const Scrapers = ScrapersTypes[type];
 
-      const Scraper = Scrapers[name];
+        if (!Scrapers) throw new InvalidInputError(`Scrapers's type ${type} does not exists`);
 
-      if (!Scraper) throw new InvalidInputError(`${name} is not a valid ${type} scraper`);
+        const Scraper = Scrapers[name];
 
-      const scraper = new Scraper(informations);
-      const result = await scraper.scrap(browser);
+        if (!Scraper) throw new InvalidInputError(`${name} is not a valid ${type} scraper`);
 
-      const resultS3Url = await saveResult(result, process.env.SCRAPING_RESULT_BUCKET, { type, name });
+        const scraper = new Scraper(informations);
+        const result = await scraper.scrap(browser);
 
-      return resultS3Url;
+        response.resultUrl = await saveResult(result, process.env.SCRAPING_RESULT_BUCKET, { type, name });
+        response.success = true;
+      } catch (error) {
+        logger.error('Couldn\'t finish scrap process');
+
+        response.success = false;
+      }
+
+      return response;
     }
   );
 
-  await Promise.all(promises);
-
-  return true;
+  return Promise.all(promises);
 };

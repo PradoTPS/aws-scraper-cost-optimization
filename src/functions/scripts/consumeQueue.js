@@ -10,19 +10,29 @@ async function processMessages(messages) {
   try {
     logger.info('Starting scrap proccess');
 
-    const messagesBodies = messages.map(({ Body }) => JSON.parse(Body));
+    const messagesBodies = messages.map(({ Body, ReceiptHandle }) => ({ tags: { ReceiptHandle }, ...JSON.parse(Body) }));
 
-    await startScrapingBatch({ entries: messagesBodies });
+    const results = await startScrapingBatch({ entries: messagesBodies });
 
     logger.info('Scrap proccess finished, deleting messages');
 
-    for (const message of messages) await sqs.deleteMessage({ QueueUrl: process.env.SCRAPING_QUEUE_URL, ReceiptHandle: message.ReceiptHandle }).promise();
+    for (const result of results) {
+      const { ReceiptHandle } = result.tags;
+
+      if (result.success) {
+        logger.info('Successfully scraped message, deleting form queue', { ReceiptHandle });
+
+        await sqs.deleteMessage({ QueueUrl: process.env.SCRAPING_QUEUE_URL, ReceiptHandle }).promise();
+      } else {
+        logger.info('Couldn\'t scrap message, , message will return to queue after timeout', { ReceiptHandle });
+      }
+    }
 
     logger.info('Messages successfully processed');
 
     return true;
   } catch (error) {
-    logger.error('Couldn\'t start scrap process, message will return to queue after timeout', { error });
+    logger.error('Couldn\'t start scrap process, messages will return to queue after timeout', { error });
   }
 }
 
