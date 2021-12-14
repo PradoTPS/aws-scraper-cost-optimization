@@ -1,5 +1,8 @@
+import logger from 'loglevel';
 import { SQS } from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
+
+import sleep from 'Utils/sleep';
 
 const sqs = new SQS();
 
@@ -20,9 +23,22 @@ async function sendMessage(message) {
 
 /**
 * @description Script function responsible for populating ScrapingQueue with test data
-* @command sls invoke local -f PopulateQueue
+* @param {Object} event - Base lambda event
+* @param {Number} event.batchSize - Integer size indicating the number of messages sent by batch
+* @param {Number} event.numberOfBatches - Integer size indicating the number of batches to be sent
+* @param {Number} event.delay - Integer time in milliseconds indicating the delay between batches
+* @command sls invoke local -f PopulateQueue -p tests/events/populateQueue.json
 */
-export async function main () {
+export async function main (event) {
+  logger.setLevel('info');
+
+  const {
+    batchSize = 1,
+    numberOfBatches = 1,
+
+    delay = 0
+  } = event;
+
   const defaultMessage = {
     type: 'coren',
     name: 'sp',
@@ -31,11 +47,20 @@ export async function main () {
     }
   };
 
-  const messages = Array.from({ length: 50 }, (_, index) =>  ({ body: defaultMessage, deduplicationId: index.toString() }) );
+  for (let index = 1; index <= numberOfBatches; index++) {
+    logger.info('Sending batch', { batchNumber: index, numberOfBatches, batchSize });
 
-  const promises = messages.map((message) => sendMessage(message.body));
+    const messages = Array.from({ length: batchSize }, (_, index) =>  ({ body: defaultMessage, deduplicationId: index.toString() }) );
 
-  await Promise.all(promises);
+    const promises = messages.map((message) => sendMessage(message.body));
+
+    await Promise.all(promises);
+
+    if (index != numberOfBatches) {
+      logger.info('Batch successfully sent, waiting delay', { delay });
+      await sleep(delay);
+    }
+  }
 
   return true;
 };
