@@ -10,7 +10,7 @@ async function sendMessage(message) {
   const uniqueId = uuidv4();
 
   const params = {
-    MessageBody: JSON.stringify(message),
+    MessageBody: JSON.stringify({ ...message, createdAt: Date.now() }),
     QueueUrl: process.env.SCRAPING_QUEUE_URL,
     MessageGroupId: uniqueId, // messages that belong to the same message group are processed in a FIFO manner (however, messages in different message groups might be processed out of order)
     MessageDeduplicationId: uniqueId

@@ -26,6 +26,7 @@ export async function main (event) {
           type,
           name,
           informations,
+          createdAt,
         } = entry;
 
         if (!type || !name) throw new InvalidInputError('Event must have type and name properties');
@@ -41,6 +42,7 @@ export async function main (event) {
         const scraper = new Scraper(informations);
         const result = await scraper.scrap(browser);
 
+        response.processingTime = Date.now() - createdAt;
         response.resultUrl = await saveResult(result, process.env.SCRAPING_RESULT_BUCKET, { type, name });
         response.success = true;
       } catch (error) {
