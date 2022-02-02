@@ -46,24 +46,41 @@ async function processMessages(messages) {
 
 /**
 * @description Script function responsible for consuming ScrapingQueue and running scraper
-* @command sls invoke local -f ConsumeQueue
+* @param {Object} event - Base lambda event
+* @param {Number} event.readBatchSize - Integer size indicating the number of messages to be read by batch
+* @command sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json
 */
-export async function main () {
+export async function main (event) {
   logger.setLevel('info');
 
   let processedBatches = 0;
   let averageMessageProcessingTimeAccumulator = 0;
 
+  const {
+    readBatchSize,
+  } = event;
+
+  logger.info('Starting consumption', { readBatchSize });
+
   while (true) {
-    const params = { QueueUrl: process.env.SCRAPING_QUEUE_URL, MaxNumberOfMessages: 3 };
+    const Messages = [];
+    let numberOfReads = 0;
 
-    logger.info('Fetching messages', { params });
+    // tries to match readBatchSize 3 times, if cannot match it use fetched
+    while (Messages.length < readBatchSize || numberOfReads < 3) {
+      const params = {
+        QueueUrl: process.env.SCRAPING_QUEUE_URL,
+        MaxNumberOfMessages: readBatchSize < 10 ? readBatchSize : 10 // if is smaller then maximum use it, else use SQS maximum per read (10)
+      };
 
-    const response = await sqs.receiveMessage(params).promise();
+      logger.info('Fetching messages', { params });
 
-    const {
-      Messages = []
-    } = response;
+      const { Messages: NewMessages = [] } = await sqs.receiveMessage(params).promise();
+
+      Messages.concat(NewMessages);
+      numberOfReads += 1;
+    };
+
 
     if (Messages.length) {
       logger.info('Fetched messages', { messagesNumber: Messages.length });
