@@ -8,7 +8,7 @@ Resources:
         CPUCredits: unlimited
       ImageId: ami-04ad2567c9e3d7893 # AWS AMI ID for Amazon Linux 2 AMI (HVM), SSD Volume Type x86_64
       InstanceInitiatedShutdownBehavior: stop
-      InstanceType: t3.nano
+      InstanceType: t3.micro
       KeyName: scraper-instance-key-pair # Key pair created at the AWS Console, because it's not supported by AWS Cloudformation
       Monitoring: true
       SecurityGroupIds:
