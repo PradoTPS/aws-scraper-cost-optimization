@@ -67,7 +67,7 @@ export async function main (event) {
     let numberOfReads = 0;
 
     // tries to match readBatchSize 3 times, if cannot match it use fetched
-    while (Messages.length < readBatchSize || numberOfReads < 3) {
+    while (Messages.length < readBatchSize && numberOfReads < 3) {
       const params = {
         QueueUrl: process.env.SCRAPING_QUEUE_URL,
         MaxNumberOfMessages: readBatchSize < 10 ? readBatchSize : 10 // if is smaller then maximum use it, else use SQS maximum per read (10)
