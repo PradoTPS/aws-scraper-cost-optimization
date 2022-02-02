@@ -1,2 +1,3 @@
 ConsumeQueue:
   handler: src/functions/scripts/consumeQueue.main
+  memorySize: 768
