@@ -63,7 +63,7 @@ export async function main (event) {
   logger.info('Starting consumption', { readBatchSize });
 
   while (true) {
-    const Messages = [];
+    let Messages = [];
     let numberOfReads = 0;
 
     // tries to match readBatchSize 3 times, if cannot match it use fetched
@@ -77,10 +77,9 @@ export async function main (event) {
 
       const { Messages: NewMessages = [] } = await sqs.receiveMessage(params).promise();
 
-      Messages.concat(NewMessages);
+      Messages = Messages.concat(NewMessages);
       numberOfReads += 1;
     };
-
 
     if (Messages.length) {
       logger.info('Fetched messages', { messagesNumber: Messages.length });
