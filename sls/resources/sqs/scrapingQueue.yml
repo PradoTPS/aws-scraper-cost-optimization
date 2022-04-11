@@ -6,3 +6,15 @@ Resources:
       QueueName: ${self:service}-scraping-queue.fifo # must end with .fifo suffix
       VisibilityTimeout: 600 # 10 minutes
       ContentBasedDeduplication: false
+      RedrivePolicy: 
+        deadLetterTargetArn: !GetAtt ScrapingDLQueue.Arn
+        maxReceiveCount: 3
+
+  ScrapingDLQueue:
+    Type: AWS::SQS::Queue
+    Properties: 
+      FifoQueue: true
+      QueueName: ${self:service}-scraping-dl-queue.fifo # must end with .fifo suffix
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeout: 60 # 1 minute
+      ContentBasedDeduplication: false
