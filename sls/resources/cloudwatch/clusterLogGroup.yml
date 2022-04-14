@@ -1,0 +1,6 @@
+Resources:
+  ClusterLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: custom/ec2/cluster-metrics
+      RetentionInDays: 1

@@ -13,6 +13,7 @@ provider:
   environment:
     SCRAPING_QUEUE_URL: !Ref ScrapingQueue
     SCRAPING_RESULT_BUCKET: !Ref ScrapingResultBucket
+    CLUSTER_LOG_GROUP_NAME: !Ref ClusterLogGroup
 
 custom:
   bundle:
@@ -40,3 +41,5 @@ resources:
   - ${file(sls/resources/ec2/scraperInstance.yml)}
   # SQS
   - ${file(sls/resources/sqs/scrapingQueue.yml)}
+  # CLOUDWATCH
+  - ${file(sls/resources/cloudwatch/clusterLogGroup.yml)}
