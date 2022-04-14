@@ -2,13 +2,15 @@ import logger from 'loglevel';
 import { SQS } from 'aws-sdk';
 
 import sleep from 'Utils/sleep';
+import getInstanceId from 'Utils/getInstanceId';
+import CloudWatchHelper from 'Utils/cloudWatchHelper';
 import { main as startScrapingBatch } from 'Functions/startScrapingBatch';
 
 const sqs = new SQS({ apiVersion: '2012-11-05' });
 
-async function processMessages(messages) {
+async function processMessages(messages, { cloudWatchHelper, instanceId }) {
   try {
-    logger.info('Starting scrap proccess');
+    logger.info('Starting scrap process, creating log stream');
 
     let messageProcessingTimeAccumulator = 0;
 
@@ -16,13 +18,13 @@ async function processMessages(messages) {
 
     const results = await startScrapingBatch({ entries: messagesBodies });
 
-    logger.info('Scrap proccess finished, deleting messages');
+    logger.info('Scrap process finished, deleting messages');
 
     for (const result of results) {
       const { ReceiptHandle } = result.tags;
 
       if (result.success) {
-        logger.info('Successfully scraped message, deleting form queue', { ReceiptHandle });
+        logger.info('Successfully scraped message, deleting from queue', { ReceiptHandle });
 
         messageProcessingTimeAccumulator += result.processingTime;
 
@@ -32,11 +34,20 @@ async function processMessages(messages) {
       }
     }
 
-    const processedMessages = results.reduce((successfullResults, result) => result.success ? successfullResults + 1 : successfullResults, 0);
+    const processedMessages = results.reduce((successfulResults, result) => result.success ? successfulResults + 1 : successfulResults, 0);
 
     const averageMessageProcessingTimeOnBatch = messageProcessingTimeAccumulator / processedMessages;
 
-    logger.info('Messages successfully processed', { processedMessages, messageProcessingTimeAccumulator, averageMessageProcessingTimeOnBatch });
+    await cloudWatchHelper.logAndRegisterMessage(
+      JSON.stringify({
+        message: 'Messages successfully processed',
+        type: 'batchMetrics',
+        instanceId,
+        processedMessages,
+        messageProcessingTimeAccumulator,
+        averageMessageProcessingTimeOnBatch
+      })
+    );
 
     return averageMessageProcessingTimeOnBatch;
   } catch (error) {
@@ -60,7 +71,15 @@ export async function main (event) {
     readBatchSize,
   } = event;
 
-  logger.info('Starting consumption', { readBatchSize });
+  const instanceId = await getInstanceId();
+
+  const cloudWatchHelper = new CloudWatchHelper();
+
+  const logStreamName = `consume-queue-execution_${Date.now()}_${instanceId}`;
+
+  await cloudWatchHelper.initializeLogStream(logStreamName);
+
+  logger.info('Log stream created, starting consumption', { readBatchSize, logStreamName });
 
   while (true) {
     let Messages = [];
@@ -84,14 +103,25 @@ export async function main (event) {
     if (Messages.length) {
       logger.info('Fetched messages', { messagesNumber: Messages.length });
 
-      const averageMessageProcessingTimeOnBatch = await processMessages(Messages);
+      const averageMessageProcessingTimeOnBatch = await processMessages(Messages, { cloudWatchHelper, instanceId });
 
       processedBatches += 1;
       averageMessageProcessingTimeAccumulator += averageMessageProcessingTimeOnBatch;
 
       const averageMessageProcessingTime = averageMessageProcessingTimeAccumulator / processedBatches;
 
-      logger.info('Current average message processing time', { processedBatches, averageMessageProcessingTimeAccumulator, averageMessageProcessingTime });
+      await cloudWatchHelper.logAndRegisterMessage(
+        JSON.stringify(
+          {
+            message: 'Current average message processing time',
+            type: 'instanceMetrics',
+            instanceId,
+            processedBatches,
+            averageMessageProcessingTimeAccumulator,
+            averageMessageProcessingTime
+          }
+        ),
+      );
     } else {
       logger.info('Queue is empty, waiting to try again', { messagesNumber: Messages.length });
 
