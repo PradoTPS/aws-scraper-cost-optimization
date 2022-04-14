@@ -10,7 +10,7 @@ const sqs = new SQS({ apiVersion: '2012-11-05' });
 
 async function processMessages(messages, { cloudWatchHelper, instanceId }) {
   try {
-    logger.info('Starting scrap proccess, creating log stream');
+    logger.info('Starting scrap process, creating log stream');
 
     let messageProcessingTimeAccumulator = 0;
 
@@ -18,7 +18,7 @@ async function processMessages(messages, { cloudWatchHelper, instanceId }) {
 
     const results = await startScrapingBatch({ entries: messagesBodies });
 
-    logger.info('Scrap proccess finished, deleting messages');
+    logger.info('Scrap process finished, deleting messages');
 
     for (const result of results) {
       const { ReceiptHandle } = result.tags;
@@ -34,7 +34,7 @@ async function processMessages(messages, { cloudWatchHelper, instanceId }) {
       }
     }
 
-    const processedMessages = results.reduce((successfullResults, result) => result.success ? successfullResults + 1 : successfullResults, 0);
+    const processedMessages = results.reduce((successfulResults, result) => result.success ? successfulResults + 1 : successfulResults, 0);
 
     const averageMessageProcessingTimeOnBatch = messageProcessingTimeAccumulator / processedMessages;
 
