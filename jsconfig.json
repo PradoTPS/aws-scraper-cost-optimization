@@ -3,7 +3,8 @@
     // Configuration so that intelisense will deal with aliases
     "paths": {
       "Scrapers": ["./src/scrapers/*"],
-      "Utils": ["./src/utils"]
+      "Utils": ["./src/utils"],
+      "Helpers": ["./src/helpers"]
     }
   }
 }

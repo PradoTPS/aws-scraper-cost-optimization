@@ -14,6 +14,8 @@ provider:
     SCRAPING_QUEUE_URL: !Ref ScrapingQueue
     SCRAPING_RESULT_BUCKET: !Ref ScrapingResultBucket
     CLUSTER_LOG_GROUP_NAME: !Ref ClusterLogGroup
+    SECURITY_GROUP_NAME: !Ref ScraperSecurityGroup
+    EC2_KEY_NAME: scraper-instance-key-pair  # key pair created at the AWS Console, because it's not supported by AWS Cloudformation
 
 custom:
   bundle:
@@ -23,6 +25,7 @@ custom:
       - chrome-aws-lambda # Because it'll be provided through a Lambda Layer
     aliases: # Create an alias to 'import' modules easily with a custom path
       - Utils: src/utils
+      - Helpers: src/helpers
       - Scrapers: src/scrapers
       - Functions: src/functions
 
@@ -32,6 +35,8 @@ functions:
   # Scripts
   - ${file(sls/functions/scripts/populateQueue.yml)}
   - ${file(sls/functions/scripts/consumeQueue.yml)}
+  - ${file(sls/functions/scripts/createInstances.yml)}
+  - ${file(sls/functions/scripts/terminateInstances.yml)}
 
 resources:
   # S3

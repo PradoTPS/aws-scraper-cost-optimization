@@ -1,0 +1,2 @@
+CreateInstances:
+  handler: src/functions/scripts/createInstances.main
