@@ -3,7 +3,7 @@ import { SQS } from 'aws-sdk';
 
 import sleep from 'Utils/sleep';
 import getInstanceId from 'Utils/getInstanceId';
-import CloudWatchHelper from 'Utils/cloudWatchHelper';
+import CloudWatchHelper from 'Helpers/cloudWatchHelper';
 import { main as startScrapingBatch } from 'Functions/startScrapingBatch';
 
 const sqs = new SQS({ apiVersion: '2012-11-05' });

@@ -23,6 +23,7 @@ custom:
       - chrome-aws-lambda # Because it'll be provided through a Lambda Layer
     aliases: # Create an alias to 'import' modules easily with a custom path
       - Utils: src/utils
+      - Helpers: src/helpers
       - Scrapers: src/scrapers
       - Functions: src/functions
 
