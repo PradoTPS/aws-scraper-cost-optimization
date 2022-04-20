@@ -36,6 +36,7 @@ functions:
   - ${file(sls/functions/scripts/populateQueue.yml)}
   - ${file(sls/functions/scripts/consumeQueue.yml)}
   - ${file(sls/functions/scripts/createInstances.yml)}
+  - ${file(sls/functions/scripts/terminateInstances.yml)}
 
 resources:
   # S3

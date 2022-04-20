@@ -1,0 +1,2 @@
+TerminateInstances:
+  handler: src/functions/scripts/terminateInstances.main

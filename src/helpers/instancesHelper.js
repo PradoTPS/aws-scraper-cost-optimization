@@ -18,12 +18,33 @@ export default class CloudWatchHelper {
     } = await ec2.runInstances(parameters).promise();
 
     return instances.map(
-            (instance) => (
-              { imageId: instance.ImageId,
-                instanceId: instance.InstanceId,
-                state: instance.State?.Name
-              }
-            )
-          );
+             (instance) => (
+               {
+                 imageId: instance.ImageId,
+                 instanceId: instance.InstanceId,
+                 state: instance.State?.Name
+               }
+             )
+           );
+  }
+
+  static async terminateInstances({ instanceIds } = {}) {
+    const parameters = {
+      InstanceIds: instanceIds,
+    };
+
+    const {
+      TerminatingInstances: terminateInstances,
+    } = await ec2.terminateInstances(parameters).promise();
+
+    return terminateInstances.map(
+             (terminateInstance) => (
+               {
+                 instanceId: terminateInstance.InstanceId,
+                 newState: terminateInstance.CurrentState?.Name,
+                 previousState: terminateInstance.PreviousState?.Name,
+               }
+             )
+           );
   }
 }
