@@ -14,6 +14,8 @@ provider:
     SCRAPING_QUEUE_URL: !Ref ScrapingQueue
     SCRAPING_RESULT_BUCKET: !Ref ScrapingResultBucket
     CLUSTER_LOG_GROUP_NAME: !Ref ClusterLogGroup
+    SECURITY_GROUP_NAME: !Ref ScraperSecurityGroup
+    EC2_KEY_NAME: scraper-instance-key-pair  # key pair created at the AWS Console, because it's not supported by AWS Cloudformation
 
 custom:
   bundle:
@@ -33,6 +35,7 @@ functions:
   # Scripts
   - ${file(sls/functions/scripts/populateQueue.yml)}
   - ${file(sls/functions/scripts/consumeQueue.yml)}
+  - ${file(sls/functions/scripts/createInstances.yml)}
 
 resources:
   # S3
