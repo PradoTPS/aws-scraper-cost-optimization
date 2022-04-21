@@ -20,6 +20,8 @@ Resources:
                 action: ExecuteBash
                 inputs:
                   commands:
+                    - aws configure set aws_access_key_id ${ssm:ec2-aws-access-key-id} --profile matheus-thiago-tcc
+                    - aws configure set aws_secret_access_key ${ssm:ec2-aws-secret-access-key} --profile matheus-thiago-tcc
                     - runuser -l ec2-user -c 'aws configure set aws_access_key_id ${ssm:ec2-aws-access-key-id} --profile matheus-thiago-tcc'
                     - runuser -l ec2-user -c 'aws configure set aws_secret_access_key ${ssm:ec2-aws-secret-access-key} --profile matheus-thiago-tcc'
 

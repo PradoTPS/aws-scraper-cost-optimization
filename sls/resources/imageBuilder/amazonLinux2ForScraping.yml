@@ -8,7 +8,7 @@ Resources:
       Comment: Role to be used by instance during image build.
     Properties:
       ManagedPolicyArns:
-        - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - Fn::Sub: arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
         - Fn::Sub: arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder
       AssumeRolePolicyDocument:
         Statement:
@@ -72,11 +72,9 @@ Resources:
     Properties:
       Name: Amazon-Linux-2-for-scraping
       Version: 0.0.1
-      ParentImage:
-        Fn::Sub: arn:aws:imagebuilder:${AWS::Region}:aws:image/amazon-linux-2-x86/x.x.x
+      ParentImage: arn:aws:imagebuilder:${self:provider.region}:aws:image/amazon-linux-2-x86/x.x.x
       Components:
-        - ComponentArn:
-            Fn::Sub: arn:aws:imagebuilder:${AWS::Region}:aws:component/update-linux/x.x.x
+        - ComponentArn: arn:aws:imagebuilder:${self:provider.region}:aws:component/update-linux/x.x.x
         - ComponentArn: !Ref ConfigureAWSComponent
         - ComponentArn: !Ref InstallChromeComponent
         - ComponentArn: !Ref NodeComponent
