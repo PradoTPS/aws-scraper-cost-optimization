@@ -44,4 +44,5 @@ resources:
   # CLOUDWATCH
   - ${file(sls/resources/cloudwatch/clusterLogGroup.yml)}
   # IMAGE BUILDER
+  - ${file(sls/resources/imageBuilder/dependenciesComponents.yml)}
   - ${file(sls/resources/imageBuilder/amazonLinux2ForScraping.yml)}

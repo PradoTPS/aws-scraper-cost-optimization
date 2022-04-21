@@ -8,6 +8,7 @@ Resources:
       Comment: Role to be used by instance during image build.
     Properties:
       ManagedPolicyArns:
+        - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
         - Fn::Sub: arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder
       AssumeRolePolicyDocument:
         Statement:
@@ -76,29 +77,14 @@ Resources:
       Components:
         - ComponentArn:
             Fn::Sub: arn:aws:imagebuilder:${AWS::Region}:aws:component/update-linux/x.x.x
+        - ComponentArn: !Ref ConfigureAWSComponent
+        - ComponentArn: !Ref InstallChromeComponent
+        - ComponentArn: !Ref NodeComponent
+        - ComponentArn: !Ref ScrapingRepoComponent
       AdditionalInstanceConfiguration:
         UserDataOverride:
           Fn::Base64:
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-            aws configure set aws_access_key_id ${ssm:ec2-aws-access-key-id} --profile matheus-thiago-tcc
-            aws configure set aws_secret_access_key ${ssm:ec2-aws-secret-access-key	
-} --profile matheus-thiago-tcc
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-            export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm install 12
-            sudo yum update -y
-            sudo yum install git -y
-            git clone https://PradoTPS:${ssm:github-personal-token}@github.com/PradoTPS/aws-scraper-cost-optimization.git
-            cd aws-scraper-cost-optimization
-            rm package-lock.json
-            npm install -g serverless
-            npm i
-            export CHROME_PATH="/usr/bin/google-chrome-stable"
-            export IS_INSTANCE=true
-            sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json
+            sudo yum install -y https://s3.${self:provider.region}.amazonaws.com/amazon-ssm-${self:provider.region}/latest/linux_amd64/amazon-ssm-agent.rpm
 
   AmazonLinux2ForScraping:
     Type: AWS::ImageBuilder::Image
