@@ -1,0 +1,102 @@
+Resources:
+  ImageBuilderLogBucket:
+    Type: AWS::S3::Bucket
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      Comment: Role to be used by instance during image build.
+    Properties:
+      ManagedPolicyArns:
+        - Fn::Sub: arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - Fn::Sub: arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+        Version: '2012-10-17'
+      Path: /executionServiceEC2Role/
+
+  InstanceRoleLoggingPolicy:
+    Type: AWS::IAM::Policy
+    Metadata:
+      Comment: Allows the instance to save log files to an S3 bucket.
+    Properties:
+      PolicyName: ImageBuilderLogBucketPolicy
+      Roles:
+        - Ref: InstanceRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource:
+              - Fn::Sub:
+                  - arn:aws:s3:::${BUCKET}/*
+                  - BUCKET:
+                      Ref: ImageBuilderLogBucket
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /executionServiceEC2Role/
+      Roles:
+        - Ref: InstanceRole
+
+  AmazonLinux2ImageInfrastructureConfiguration:
+    Type: AWS::ImageBuilder::InfrastructureConfiguration
+    Properties:
+      Name: Amazon-Linux-2-for-scraping-Infrastructure-Configuration
+      InstanceProfileName:
+        Ref: InstanceProfile
+      Logging:
+        S3Logs:
+          S3BucketName:
+            Ref: ImageBuilderLogBucket
+
+  AmazonLinux2LogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: /aws/imagebuilder/Amazon-Linux-2-for-scraping
+      RetentionInDays: 3
+
+  AmazonLinux2ImageRecipe:
+    Type: AWS::ImageBuilder::ImageRecipe
+    Properties:
+      Name: Amazon-Linux-2-for-scraping
+      Version: 0.0.1
+      ParentImage: arn:aws:imagebuilder:${self:provider.region}:aws:image/amazon-linux-2-x86/x.x.x
+      Components:
+        - ComponentArn: arn:aws:imagebuilder:${self:provider.region}:aws:component/update-linux/x.x.x
+        - ComponentArn: !Ref ConfigureAWSComponent
+        - ComponentArn: !Ref InstallChromeComponent
+        - ComponentArn: !Ref NodeComponent
+        - ComponentArn: !Ref ScrapingRepoComponent
+      AdditionalInstanceConfiguration:
+        UserDataOverride:
+          Fn::Base64:
+            sudo yum install -y https://s3.${self:provider.region}.amazonaws.com/amazon-ssm-${self:provider.region}/latest/linux_amd64/amazon-ssm-agent.rpm
+
+  AmazonLinux2ForScraping:
+    Type: AWS::ImageBuilder::Image
+    Properties:
+      ImageRecipeArn:
+        Ref: AmazonLinux2ImageRecipe
+      InfrastructureConfigurationArn:
+        Ref: AmazonLinux2ImageInfrastructureConfiguration
+
+  AmazonLinux2ForScrapingParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Image Id for Amazon Linux 2 for scraping
+      Name: /test/images/AmazonLinux2-ForScraping
+      Type: String
+      Value:
+        Fn::GetAtt: [AmazonLinux2ForScraping, ImageId]

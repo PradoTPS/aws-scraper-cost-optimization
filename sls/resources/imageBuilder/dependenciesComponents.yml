@@ -1,0 +1,134 @@
+Resources:
+  ConfigureAWSComponent:
+    Type: 'AWS::ImageBuilder::Component'
+    Properties:
+      Name: 'configure-aws-credentials'
+      Platform: 'Linux'
+      Version: '1.0.0'
+      Description: 'Get credentials in SSM and configure using aws cli'
+      SupportedOsVersions: 
+        - 'Amazon Linux 2'
+      Data: |
+        name: ConfigureAWSCredentials - InlineData
+        description: Get credentials in SSM and configure using aws cli
+        schemaVersion: 1.0
+
+        phases:
+          - name: build
+            steps:
+              - name: ConfigureAWSStep
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - aws configure set aws_access_key_id ${ssm:ec2-aws-access-key-id} --profile matheus-thiago-tcc
+                    - aws configure set aws_secret_access_key ${ssm:ec2-aws-secret-access-key} --profile matheus-thiago-tcc
+                    - runuser -l ec2-user -c 'aws configure set aws_access_key_id ${ssm:ec2-aws-access-key-id} --profile matheus-thiago-tcc'
+                    - runuser -l ec2-user -c 'aws configure set aws_secret_access_key ${ssm:ec2-aws-secret-access-key} --profile matheus-thiago-tcc'
+
+  InstallChromeComponent:
+    Type: 'AWS::ImageBuilder::Component'
+    Properties:
+      Name: 'install-chrome'
+      Platform: 'Linux'
+      Version: '1.0.0'
+      Description: 'Install chrome and dependencies'
+      SupportedOsVersions: 
+        - 'Amazon Linux 2'
+      Data: |
+        name: InstallChrome - InlineData
+        description: Install chrome and dependencies
+        schemaVersion: 1.0
+
+        phases:
+          - name: build
+            steps:
+              - name: InstallChrome
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - cd /tmp
+                    - wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+                    - sudo yum install ./google-chrome-stable_current_x86_64.rpm -y
+              - name: InstallDependencies
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - sudo yum install alsa-lib.x86_64 atk.x86_64 cups-libs.x86_64 gtk3.x86_64 ipa-gothic-fonts libXcomposite.x86_64 libXcursor.x86_64 libXdamage.x86_64 libXext.x86_64 libXi.x86_64 libXrandr.x86_64 libXScrnSaver.x86_64 libXtst.x86_64 pango.x86_64 xorg-x11-fonts-100dpi xorg-x11-fonts-75dpi xorg-x11-fonts-cyrillic xorg-x11-fonts-misc xorg-x11-fonts-Type1 xorg-x11-utils -y
+              - name: ExportChromePath
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - echo "export CHROME_PATH=/usr/bin/google-chrome-stable">>/home/ec2-user/.bashrc
+                    - echo "export CHROME_PATH=/usr/bin/google-chrome-stable">>~/.bashrc
+                    - source /home/ec2-user/.bashrc
+                    - source ~/.bashrc
+
+  NodeComponent:
+    Type: 'AWS::ImageBuilder::Component'
+    Properties:
+      Name: 'nvm'
+      Platform: 'Linux'
+      Version: '1.0.0'
+      Description: 'Install node'
+      SupportedOsVersions: 
+        - 'Amazon Linux 2'
+      Data: |
+        name: Node - InlineData
+        description: Install node
+        schemaVersion: 1.0
+
+        phases:
+          - name: build
+            steps:
+              - name: InstallNode
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - curl -sL https://rpm.nodesource.com/setup_12.x | sudo bash -
+                    - sudo yum install -y nodejs
+                    - npm install -g serverless
+
+  ScrapingRepoComponent:
+    Type: 'AWS::ImageBuilder::Component'
+    Properties:
+      Name: 'scraping-repo'
+      Platform: 'Linux'
+      Version: '1.0.0'
+      Description: 'Install dependencies and clone github repo'
+      SupportedOsVersions: 
+        - 'Amazon Linux 2'
+      Data: |
+        name: ScrapingRepo - InlineData
+        description: Install dependencies and clone github scraping repo
+        schemaVersion: 1.0
+
+        phases:
+          - name: build
+            steps:
+              - name: CloneRepoAndInstallDependencies
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - sudo yum install git -y
+                    - cd /home/ec2-user
+                    - git clone https://PradoTPS:${ssm:github-personal-token}@github.com/PradoTPS/aws-scraper-cost-optimization.git
+                    - cd aws-scraper-cost-optimization
+                    - rm package-lock.json
+                    - npm i
+              - name: ExportIsInstance
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - echo "export IS_INSTANCE=true">>/home/ec2-user/.bashrc
+                    - echo "export IS_INSTANCE=true">>~/.bashrc
+                    - source /home/ec2-user/.bashrc
+                    - source ~/.bashrc
+          - name: test
+            steps:
+              - name: GetVersions
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - node -v
+                    - sls -v
+                    - git --version
