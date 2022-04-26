@@ -1,4 +1,5 @@
 import logger from 'loglevel';
+import sleep from 'Utils/sleep';
 import { EC2 } from 'aws-sdk';
 import { NodeSSH } from 'node-ssh';
 
@@ -121,21 +122,32 @@ export default class InstancesHelper {
     await ssh.connect({
       host,
       username,
-      privateKey
+      privateKey,
     });
 
     logger.info('Run consume queue', { instanceId, username, privateKey });
 
+    await Promise.race([
+      ssh.execCommand('nohup sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json &', { cwd:'/home/ec2-user/aws-scraper-cost-optimization' }),
+      sleep(5000),
+    ]);
+
     const {
       stdout,
       stderr,
-    } = await ssh.execCommand('nohup sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json & disown', { cwd:'/home/ec2-user/aws-scraper-cost-optimization' });
+    } = await ssh.execCommand('ps -A | grep node');
 
     await ssh.dispose();
 
+    if (stderr) {
+      throw new Error(stderr);
+    }
+
+    const [pid] = stdout.split(' ');
+
     return {
-      stdout,
-      stderr,
+      pid,
+      instanceId,
     };
   }
 }
