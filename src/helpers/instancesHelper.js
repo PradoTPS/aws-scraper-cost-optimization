@@ -1,5 +1,6 @@
 import logger from 'loglevel';
 import { EC2 } from 'aws-sdk';
+import { NodeSSH } from 'node-ssh';
 
 const ec2 = new EC2({ apiVersion: '2016-11-15' });
 
@@ -36,7 +37,7 @@ async function getTerminableInstances(numberOfInstances) {
 export default class InstancesHelper {
   static async createInstances({ numberOfInstances = 1, instanceType = 't2.nano' } = {}) {
     const {
-     Instances: instances,
+      Instances: instances,
     } = await ec2.runInstances({
       ImageId: 'ami-04ad2567c9e3d7893', // using aws default image while we create ours
       InstanceType: instanceType,
@@ -92,5 +93,49 @@ export default class InstancesHelper {
 
       return [];
     }
+  }
+
+  static async startQueueConsumeOnInstance({ instanceId, username = 'ec2-user', privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem' } = {}) {
+    logger.info('Getting public dns of the provided instance', { instanceId });
+
+    const {
+      Reservations: [{ Instances: [instance] } = {}]
+    } = await ec2.describeInstances({
+      InstanceIds: [instanceId],
+      Filters: [
+        {
+          Name: 'instance-state-name',
+          Values: ['running']
+        },
+      ],
+    }).promise();
+
+    const {
+      PublicDnsName: host
+    } = instance;
+
+    const ssh = new NodeSSH();
+
+    logger.info('Connect SSH', { instanceId, username, privateKey });
+
+    await ssh.connect({
+      host,
+      username,
+      privateKey
+    });
+
+    logger.info('Run consume queue', { instanceId, username, privateKey });
+
+    const {
+      stdout,
+      stderr,
+    } = await ssh.execCommand('nohup sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json & disown', { cwd:'/home/ec2-user/aws-scraper-cost-optimization' });
+
+    await ssh.dispose();
+
+    return {
+      stdout,
+      stderr,
+    };
   }
 }
