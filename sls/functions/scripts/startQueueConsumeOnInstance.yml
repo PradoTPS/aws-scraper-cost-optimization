@@ -1,0 +1,2 @@
+StartQueueConsumeOnInstance:
+  handler: src/functions/scripts/startQueueConsumeOnInstance.main

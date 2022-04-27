@@ -23,6 +23,7 @@ custom:
     forceExclude:
       - aws-sdk # Because it has been already  provided by AWS Cloud environment
       - chrome-aws-lambda # Because it'll be provided through a Lambda Layer
+      - ssh2 # Incompatible with webpack
     aliases: # Create an alias to 'import' modules easily with a custom path
       - Utils: src/utils
       - Helpers: src/helpers
@@ -37,6 +38,7 @@ functions:
   - ${file(sls/functions/scripts/consumeQueue.yml)}
   - ${file(sls/functions/scripts/createInstances.yml)}
   - ${file(sls/functions/scripts/terminateInstances.yml)}
+  - ${file(sls/functions/scripts/startQueueConsumeOnInstance.yml)}
 
 resources:
   # S3
