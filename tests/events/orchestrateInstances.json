@@ -1,0 +1,5 @@
+{
+  "sla": 60000,
+  "instanceType": "t2.nano",
+  "parallelProcessingCapacity": 10
+}
