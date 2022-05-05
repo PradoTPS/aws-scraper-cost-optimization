@@ -1,0 +1,2 @@
+OrchestrateInstances:
+  handler: src/functions/scripts/orchestrateInstances.main

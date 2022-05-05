@@ -1,5 +1,5 @@
 {
   "instanceId": "i-0f430930b95e1ad2c",
   "username": "ec2-user",
-  "privateKey": "/home/thiago/Documents/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem"
+  "privateKey": "/home/marotti/.ssh/scraper-instance-key-pair.pem"
 }

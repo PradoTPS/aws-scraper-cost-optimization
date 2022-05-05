@@ -13,8 +13,12 @@ async function processMessages(messages, { cloudWatchHelper, instanceId }) {
     logger.info('Starting scrap process, creating log stream');
 
     let messageProcessingTimeAccumulator = 0;
+    let messageServiceTimeAccumulator = 0;
 
-    const messagesBodies = messages.map(({ Body, ReceiptHandle }) => ({ tags: { ReceiptHandle }, ...JSON.parse(Body) }));
+    const messagesBodies = messages.map(
+      ({ Body, ReceiptHandle, Attributes: { ApproximateFirstReceiveTimestamp } }) =>
+        ({ tags: { ReceiptHandle }, firstReceivedAt: ApproximateFirstReceiveTimestamp, ...JSON.parse(Body) })
+      );
 
     const results = await startScrapingBatch({ entries: messagesBodies });
 
@@ -27,6 +31,7 @@ async function processMessages(messages, { cloudWatchHelper, instanceId }) {
         logger.info('Successfully scraped message, deleting from queue', { ReceiptHandle });
 
         messageProcessingTimeAccumulator += result.processingTime;
+        messageServiceTimeAccumulator += result.serviceTime;
 
         await sqs.deleteMessage({ QueueUrl: process.env.SCRAPING_QUEUE_URL, ReceiptHandle }).promise();
       } else {
@@ -37,6 +42,7 @@ async function processMessages(messages, { cloudWatchHelper, instanceId }) {
     const processedMessages = results.reduce((successfulResults, result) => result.success ? successfulResults + 1 : successfulResults, 0);
 
     const averageMessageProcessingTimeOnBatch = messageProcessingTimeAccumulator / processedMessages;
+    const averageMessageServiceTimeOnBatch = messageServiceTimeAccumulator / processedMessages;
 
     await cloudWatchHelper.logAndRegisterMessage(
       JSON.stringify({
@@ -45,11 +51,12 @@ async function processMessages(messages, { cloudWatchHelper, instanceId }) {
         instanceId,
         processedMessages,
         messageProcessingTimeAccumulator,
-        averageMessageProcessingTimeOnBatch
+        averageMessageProcessingTimeOnBatch,
+        averageMessageServiceTimeOnBatch,
       })
     );
 
-    return averageMessageProcessingTimeOnBatch;
+    return { averageMessageProcessingTimeOnBatch, averageMessageServiceTimeOnBatch };
   } catch (error) {
     logger.error('Couldn\'t start scrap process, messages will return to queue after timeout', { error });
   }
@@ -66,6 +73,7 @@ export async function main (event) {
 
   let processedBatches = 0;
   let averageMessageProcessingTimeAccumulator = 0;
+  let averageMessageServiceTimeAccumulator = 0;
 
   const {
     readBatchSize,
@@ -89,7 +97,8 @@ export async function main (event) {
     while (Messages.length < readBatchSize && numberOfReads < 3) {
       const params = {
         QueueUrl: process.env.SCRAPING_QUEUE_URL,
-        MaxNumberOfMessages: readBatchSize < 10 ? readBatchSize : 10 // if is smaller then maximum use it, else use SQS maximum per read (10)
+        MaxNumberOfMessages: readBatchSize < 10 ? readBatchSize : 10,
+        AttributeNames: ['ApproximateFirstReceiveTimestamp'] // if is smaller then maximum use it, else use SQS maximum per read (10)
       };
 
       logger.info('Fetching messages', { params });
@@ -103,12 +112,14 @@ export async function main (event) {
     if (Messages.length) {
       logger.info('Fetched messages', { messagesNumber: Messages.length });
 
-      const averageMessageProcessingTimeOnBatch = await processMessages(Messages, { cloudWatchHelper, instanceId });
+      const { averageMessageProcessingTimeOnBatch, averageMessageServiceTimeOnBatch } = await processMessages(Messages, { cloudWatchHelper, instanceId });
 
       processedBatches += 1;
       averageMessageProcessingTimeAccumulator += averageMessageProcessingTimeOnBatch;
+      averageMessageServiceTimeAccumulator += averageMessageServiceTimeOnBatch;
 
       const averageMessageProcessingTime = averageMessageProcessingTimeAccumulator / processedBatches;
+      const averageMessageServiceTime = averageMessageServiceTimeAccumulator / processedBatches;
 
       await cloudWatchHelper.logAndRegisterMessage(
         JSON.stringify(
@@ -118,7 +129,8 @@ export async function main (event) {
             instanceId,
             processedBatches,
             averageMessageProcessingTimeAccumulator,
-            averageMessageProcessingTime
+            averageMessageProcessingTime,
+            averageMessageServiceTime,
           }
         ),
       );

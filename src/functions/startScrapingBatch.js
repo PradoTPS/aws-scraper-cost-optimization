@@ -9,7 +9,7 @@ import { InvalidInputError } from 'Utils/errors';
 /**
 * @description Function responsible for calling specific scraper based on type and regionality
 * @param {Object} event - Base lambda event
-* @param {Array.<{ type: String, name: String, informations: Object, tags: Object }>} event.entries - Array of entries to be scraped
+* @param {Array.<{ type: String, name: String, createdAt: String, firstReceivedAt: String, informations: Object, tags: Object }>} event.entries - Array of entries to be scraped
 * @command sls invoke local -f StartScrapingBatch -p tests/events/startScrapingBatch.json
 */
 export async function main (event) {
@@ -27,6 +27,7 @@ export async function main (event) {
           name,
           informations,
           createdAt,
+          firstReceivedAt,
         } = entry;
 
         if (!type || !name) throw new InvalidInputError('Event must have type and name properties');
@@ -43,6 +44,7 @@ export async function main (event) {
         const result = await scraper.scrap(browser);
 
         response.processingTime = Date.now() - createdAt;
+        response.serviceTime = Date.now() - firstReceivedAt;
         response.resultUrl = await saveResult(result, process.env.SCRAPING_RESULT_BUCKET, { type, name });
         response.success = true;
       } catch (error) {

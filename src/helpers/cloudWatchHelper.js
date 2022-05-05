@@ -46,4 +46,16 @@ export default class CloudWatchHelper {
 
     return true;
   }
+
+  static async getLogMessages({ startTime, filterPattern } = {}) {
+    const {
+      events,
+    } = await cloudwatchLogs.filterLogEvents({
+      logGroupName: process.env.CLUSTER_LOG_GROUP_NAME, /* required */
+      filterPattern,
+      startTime,
+    }).promise();
+
+    return events.map(({ message }) => JSON.parse(message));
+  }
 }
