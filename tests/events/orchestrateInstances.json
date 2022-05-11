@@ -1,5 +1,7 @@
 {
-  "sla": 60000,
+  "sla": 300000,
   "instanceType": "t2.nano",
-  "parallelProcessingCapacity": 10
+  "parallelProcessingCapacity": 5,
+  "maximumClusterSize": 2,
+  "privateKey": "/home/marotti/.ssh/scraper-instance-key-pair.pem"
 }

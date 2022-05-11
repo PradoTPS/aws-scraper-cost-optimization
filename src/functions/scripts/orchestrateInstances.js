@@ -7,27 +7,29 @@ import CloudWatchHelper from 'Helpers/cloudWatchHelper';
 
 const sqs = new SQS({ apiVersion: '2012-11-05' });
 
-async function getClusterMetrics(lastExecutionTime) {
+async function getClusterMetrics() {
   const activeInstancesIds = [];
 
+  const startTime = Date.now() - (30 * 60000); // 10 minutes ago
+
+  logger.info('Fetching cluster metrics', { startTime: new Date(startTime) });
+
   const messages = await CloudWatchHelper.getLogMessages({
-    filterPattern: '{ ($.instanceId != "local") && ($.averageMessageServiceTime = *) }',
-    startTime: lastExecutionTime,
+    filterPattern: '{ ($.instanceId != "local") && ($.averageMessageServiceTime = *)}',
+    startTime,
   });
 
   const averageClusterServiceTimeAccumulator = messages.reduce(
     function(time, { instanceId, averageMessageServiceTime }) {
-      time += averageMessageServiceTime;
-
       if(!activeInstancesIds.includes(instanceId)) activeInstancesIds.push(instanceId);
 
-      return time;
+      return time + averageMessageServiceTime;
     },
-    0,
+    0
   );
 
   return {
-    averageClusterServiceTimeAccumulator,
+    averageClusterServiceTime: averageClusterServiceTimeAccumulator / messages.length,
     clusterSize: activeInstancesIds.length,
   };
 }
@@ -51,7 +53,8 @@ async function getApproximateNumberOfMessages() {
 * @param {Number} event.sla - Integer size indicating the SLA (Service Level Agreement) time in milliseconds
 * @param {String} event.instanceType - Type of instances to create on orchestrator
 * @param {Number} event.parallelProcessingCapacity - Number indicating how many messages one instance can handle in parallel
-* @command sls invoke local -f OrchestrateInstances -p tests/events/orchestrateInstances.json
+* @param {Number} event.maximumClusterSize - Maximum number of instances on cluster
+* @param {String} [event.privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem'] - String indicating path to EC2 privateKey
 */
 export async function main (event) {
   logger.setLevel('info');
@@ -60,6 +63,8 @@ export async function main (event) {
     sla,
     instanceType,
     parallelProcessingCapacity,
+    privateKey,
+    maximumClusterSize,
   } = event;
 
   const cron = `0/${Math.ceil((sla / 1000) / 4)} * * * * *`; // runs every sla / 4 milliseconds
@@ -72,20 +77,39 @@ export async function main (event) {
       logger.info('Started verification function', { startedAt: new Date() });
 
       const approximateNumberOfMessages = await getApproximateNumberOfMessages();
-      const { averageClusterServiceTimeAccumulator, clusterSize: actualClusterSize } = await getClusterMetrics(this.lastDate().getTime());
-
-      const averageClusterServiceTime = averageClusterServiceTimeAccumulator / actualClusterSize;
+      const { averageClusterServiceTime, clusterSize: actualClusterSize } = await getClusterMetrics(this.lastDate().getTime());
 
       logger.info('Fetched approximate number of messages and service time', { approximateNumberOfMessages, averageClusterServiceTime });
 
       const idealClusterSize = Math.ceil((approximateNumberOfMessages * averageClusterServiceTime) / (sla * parallelProcessingCapacity));
 
-      logger.info('Fetched ideal numberOfInstances', { idealClusterSize, actualClusterSize });
+      const newClusterSize = Math.min(maximumClusterSize, idealClusterSize);
 
-      if (idealClusterSize > actualClusterSize) {
-        await InstancesHelper.createInstances({ numberOfInstances: idealClusterSize - actualClusterSize, instanceType });
-      } else if (idealClusterSize < actualClusterSize) {
-        await InstancesHelper.terminateInstances({ numberOfInstances: actualClusterSize - idealClusterSize });
+      logger.info('Fetched ideal numberOfInstances', { idealClusterSize, actualClusterSize, newClusterSize });
+
+      if (newClusterSize > actualClusterSize) {
+        const newInstances = await InstancesHelper.createInstances({
+          numberOfInstances: newClusterSize - actualClusterSize,
+          instanceType
+        });
+
+        const startCrawlPromises = newInstances.map(
+          async ({ instanceId }) => {
+            const instanceStatus = await InstancesHelper.waitInstanceFinalStatus({ instanceId });
+
+            if (instanceStatus === 'running') {
+              await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey });
+
+              logger.info('Machine started consuming queue', { instanceId });
+            } else {
+              logger.warn('Instance failed creation', { instanceStatus });
+            }
+          }
+        );
+
+        Promise.all(startCrawlPromises);
+      } else if (newClusterSize < actualClusterSize) {
+        await InstancesHelper.terminateInstances({ numberOfInstances: actualClusterSize - newClusterSize });
       }
 
       return true;

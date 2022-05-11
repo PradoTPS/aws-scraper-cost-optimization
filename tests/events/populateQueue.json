@@ -1,5 +1,5 @@
 {
-  "batchSize": 20,
-  "numberOfBatches": 3,
+  "batchSize": 200,
+  "numberOfBatches": 60,
   "delay": 15000
 }

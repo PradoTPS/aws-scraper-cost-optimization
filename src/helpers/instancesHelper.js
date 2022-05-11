@@ -37,6 +37,8 @@ async function getTerminableInstances(numberOfInstances) {
 
 export default class InstancesHelper {
   static async createInstances({ numberOfInstances = 1, instanceType = 't2.nano' } = {}) {
+    logger.info('Creating instances', { numberOfInstances, instanceType });
+
     const {
       Instances: instances,
     } = await ec2.runInstances({
@@ -96,6 +98,43 @@ export default class InstancesHelper {
     }
   }
 
+  static async getInstanceStatus({ instanceId }) {
+    let statusName;
+
+    try {
+      const {
+        InstanceStatuses: [{
+          InstanceState: {
+            Name: newStatusName
+          },
+        } = {}],
+      } = await ec2.describeInstanceStatus({
+        InstanceIds: [instanceId],
+      }).promise();
+
+      statusName = newStatusName;
+    } catch (error) {
+      statusName = 'unavailable';
+    }
+
+    return statusName;
+  }
+
+  static async waitInstanceFinalStatus({ instanceId }) {
+    let status = await this.getInstanceStatus({ instanceId });
+
+    logger.info('Fetched initial instance status', { instanceStatus: status });
+
+    while (!['running', 'shutting-down', 'terminated', 'stopped'].includes(status)) {
+      await sleep(10000); // 10 s
+
+      status = await this.getInstanceStatus({ instanceId });
+      logger.info('Fetched non final instance status, waiting 10 seconds and trying again', { instanceStatus: status });
+    }
+
+    return status;
+  }
+
   static async startQueueConsumeOnInstance({ instanceId, username = 'ec2-user', privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem' } = {}) {
     logger.info('Getting public dns of the provided instance', { instanceId });
 
@@ -103,12 +142,6 @@ export default class InstancesHelper {
       Reservations: [{ Instances: [instance] } = {}]
     } = await ec2.describeInstances({
       InstanceIds: [instanceId],
-      Filters: [
-        {
-          Name: 'instance-state-name',
-          Values: ['running']
-        },
-      ],
     }).promise();
 
     const {
