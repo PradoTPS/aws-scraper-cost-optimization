@@ -2,6 +2,8 @@ import logger from 'loglevel';
 import { SQS } from 'aws-sdk';
 import { CronJob } from 'cron';
 
+import sleep from 'Utils/sleep';
+
 import InstancesHelper from 'Helpers/instancesHelper';
 import CloudWatchHelper from 'Helpers/cloudWatchHelper';
 
@@ -30,7 +32,6 @@ async function getClusterMetrics() {
 
   return {
     averageClusterServiceTime: averageClusterServiceTimeAccumulator / messages.length,
-    clusterSize: activeInstancesIds.length,
   };
 }
 
@@ -77,13 +78,26 @@ export async function main (event) {
       logger.info('Started verification function', { startedAt: new Date() });
 
       const approximateNumberOfMessages = await getApproximateNumberOfMessages();
-      const { averageClusterServiceTime, clusterSize: actualClusterSize } = await getClusterMetrics(this.lastDate().getTime());
+
+      let { averageClusterServiceTime } = await getClusterMetrics(this.lastDate().getTime());
+
+      // 30 sec, default value if system recently started running
+      averageClusterServiceTime = averageClusterServiceTime || 30000;
 
       logger.info('Fetched approximate number of messages and service time', { approximateNumberOfMessages, averageClusterServiceTime });
 
       const idealClusterSize = Math.ceil((approximateNumberOfMessages * averageClusterServiceTime) / (sla * parallelProcessingCapacity));
 
       const newClusterSize = Math.min(maximumClusterSize, idealClusterSize);
+
+      const actualClusterSize = (await InstancesHelper.getInstancesIds({
+        filters: [
+          {
+            Name: 'instance-state-name',
+            Values: ['running', 'pending']
+          },
+        ],
+      })).length;
 
       logger.info('Fetched ideal numberOfInstances', { idealClusterSize, actualClusterSize, newClusterSize });
 
@@ -96,6 +110,8 @@ export async function main (event) {
         const startCrawlPromises = newInstances.map(
           async ({ instanceId }) => {
             const instanceStatus = await InstancesHelper.waitInstanceFinalStatus({ instanceId });
+
+            await sleep(60000); // 60 sec, wait after status changes to running
 
             if (instanceStatus === 'running') {
               await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey });

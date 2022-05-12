@@ -6,19 +6,27 @@ import { NodeSSH } from 'node-ssh';
 const ec2 = new EC2({ apiVersion: '2016-11-15' });
 
 export default class InstancesHelper {
-  static async getInstances({ maximumNumberOfInstances, filters }) {
-    logger.info('Fetching instances', { maximumNumberOfInstances, filters });
+  static async getInstancesIds({ maximumNumberOfInstances, filters }) {
+    const parameters = {
+      Filters: filters,
+      ...maximumNumberOfInstances ? { MaxResults: maximumNumberOfInstances >= 5 ? maximumNumberOfInstances : 5 } : {}, // minimum is 5, if numberOfInstances is lower we treat it after
+    };
+
+    logger.info('Fetching instances', { ...parameters });
+
 
     const {
-      Reservations: [{ Instances: instances = [] } = {}]
-    } = await ec2.describeInstances({
-      Filters: filters,
-      MaxResults: maximumNumberOfInstances >= 5 ? maximumNumberOfInstances : 5, // minimum is 5, if numberOfInstances is lower we treat it after
-    }).promise();
+      Reservations: reservations,
+    } = await ec2.describeInstances(parameters).promise();
 
-    const instanceIds = instances.map((instance) => instance.InstanceId);
+    const instanceIds = reservations.reduce(
+      (ids, { Instances: instances = [] }) => {
+        return [...ids, ...instances.map((instance) => instance.InstanceId)];
+      },
+      [],
+    );
 
-    const slicedInstanceIds = instanceIds.length > maximumNumberOfInstances
+    const slicedInstanceIds = maximumNumberOfInstances && instanceIds.length > maximumNumberOfInstances
                                         ? instanceIds.slice(0, maximumNumberOfInstances)
                                         : instanceIds;
 
@@ -65,7 +73,7 @@ export default class InstancesHelper {
 
   static async terminateInstances({ instanceIds, numberOfInstances } = {}) {
     if (!instanceIds?.length && numberOfInstances) {
-      instanceIds = await this.getInstances({
+      instanceIds = await this.getInstancesIds({
         maximumNumberOfInstances: numberOfInstances,
         filters: [
           {
