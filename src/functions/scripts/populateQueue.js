@@ -16,8 +16,6 @@ async function sendMessage(message) {
     MessageDeduplicationId: uniqueId
   };
 
-  console.log(params);
-
   return sqs.sendMessage(params).promise();
 }
 

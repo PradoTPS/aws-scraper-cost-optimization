@@ -14,7 +14,6 @@ export default class InstancesHelper {
 
     logger.info('Fetching instances', { ...parameters });
 
-
     const {
       Reservations: reservations,
     } = await ec2.describeInstances(parameters).promise();
@@ -139,10 +138,10 @@ export default class InstancesHelper {
     logger.info('Fetched initial instance status', { instanceStatus: status });
 
     while (!['running', 'shutting-down', 'terminated', 'stopped'].includes(status)) {
+      logger.info('Fetched non final instance status, waiting 10 seconds and trying again', { instanceStatus: status });
       await sleep(10000); // 10 s
 
       status = await this.getInstanceStatus({ instanceId });
-      logger.info('Fetched non final instance status, waiting 10 seconds and trying again', { instanceStatus: status });
     }
 
     return status;
@@ -173,27 +172,6 @@ export default class InstancesHelper {
 
     logger.info('Run consume queue', { instanceId, username, privateKey });
 
-    await Promise.race([
-      ssh.execCommand('nohup sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json &', { cwd:'/home/ec2-user/aws-scraper-cost-optimization' }),
-      sleep(5000),
-    ]);
-
-    const {
-      stdout,
-      stderr,
-    } = await ssh.execCommand('ps -A | grep node');
-
-    await ssh.dispose();
-
-    if (stderr) {
-      throw new Error(stderr);
-    }
-
-    const [pid] = stdout.split(' ');
-
-    return {
-      pid,
-      instanceId,
-    };
+    return ssh.execCommand('sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json', { cwd:'/home/ec2-user/aws-scraper-cost-optimization' });
   }
 }

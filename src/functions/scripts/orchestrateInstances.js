@@ -111,12 +111,12 @@ export async function main (event) {
           async ({ instanceId }) => {
             const instanceStatus = await InstancesHelper.waitInstanceFinalStatus({ instanceId });
 
-            await sleep(60000); // 60 sec, wait after status changes to running
-
             if (instanceStatus === 'running') {
+              await sleep(30000); // 30 sec, wait after status changes to running
+
               await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey });
 
-              logger.info('Machine started consuming queue', { instanceId });
+              logger.info('Crawl process started on machine', { instanceId });
             } else {
               logger.warn('Instance failed creation', { instanceStatus });
             }
