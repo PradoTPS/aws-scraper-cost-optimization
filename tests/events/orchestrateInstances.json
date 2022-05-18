@@ -1,8 +1,7 @@
 {
   "sla": 300000,
   "instanceType": "t2.medium",
-  "parallelProcessingCapacity": 5,
-  "maximumClusterSize": 2,
-  "consumeQueueEventPath": "tests/events/consumeQueue/default.json",
+  "parallelProcessingCapacity": 10,
+  "maximumClusterSize": 3,
   "privateKey": "/home/marotti/.ssh/scraper-instance-key-pair.pem"
 }

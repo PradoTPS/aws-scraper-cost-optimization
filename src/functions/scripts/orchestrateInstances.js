@@ -10,28 +10,28 @@ import CloudWatchHelper from 'Helpers/cloudWatchHelper';
 const sqs = new SQS({ apiVersion: '2012-11-05' });
 
 async function getClusterMetrics() {
-  const activeInstancesIds = [];
-
   const startTime = Date.now() - (30 * 60000); // 10 minutes ago
 
   logger.info('Fetching cluster metrics', { startTime: new Date(startTime) });
 
   const messages = await CloudWatchHelper.getLogMessages({
-    filterPattern: '{ ($.instanceId != "local") && ($.averageMessageServiceTime = *)}',
+    filterPattern: '{ ($.instanceId != "local") && ($.averageMessageServiceTime = *) && ($.averageMessageProcessingTime = *)}',
     startTime,
   });
 
-  const averageClusterServiceTimeAccumulator = messages.reduce(
-    function(time, { instanceId, averageMessageServiceTime }) {
-      if(!activeInstancesIds.includes(instanceId)) activeInstancesIds.push(instanceId);
-
-      return time + averageMessageServiceTime;
+  const [averageClusterServiceTimeAccumulator, averageClusterProcessingTimeAccumulator] = messages.reduce(
+    function(
+      [averageMessageServiceTimeAccumulator, averageMessageProcessingTimeAccumulator],
+      { averageMessageServiceTime, averageMessageProcessingTime }
+    ) {
+      return [averageMessageServiceTimeAccumulator + averageMessageServiceTime, averageMessageProcessingTimeAccumulator + averageMessageProcessingTime];
     },
-    0
+    [0, 0],
   );
 
   return {
     averageClusterServiceTime: averageClusterServiceTimeAccumulator / messages.length,
+    averageClusterProcessingTime: averageClusterProcessingTimeAccumulator / messages.length,
   };
 }
 
@@ -55,7 +55,6 @@ async function getApproximateNumberOfMessages() {
 * @param {String} event.instanceType - Type of instances to create on orchestrator
 * @param {Number} event.parallelProcessingCapacity - Number indicating how many messages one instance can handle in parallel
 * @param {Number} event.maximumClusterSize - Maximum number of instances on cluster
-* @param {String} [event.consumeQueueEventPath = 'tests/events/consumeQueue/default.json'] - Path of consumeQueueEvent
 * @param {String} [event.privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem'] - String indicating path to EC2 privateKey
 */
 export async function main (event) {
@@ -66,7 +65,6 @@ export async function main (event) {
     instanceType,
     parallelProcessingCapacity,
     privateKey,
-    consumeQueueEventPath,
     maximumClusterSize,
   } = event;
 
@@ -81,12 +79,12 @@ export async function main (event) {
 
       const approximateNumberOfMessages = await getApproximateNumberOfMessages();
 
-      let { averageClusterServiceTime } = await getClusterMetrics(this.lastDate().getTime());
+      let { averageClusterServiceTime, averageClusterProcessingTime } = await getClusterMetrics(this.lastDate().getTime());
 
       // 30 sec, default value if system recently started running
       averageClusterServiceTime = averageClusterServiceTime || 30000;
 
-      logger.info('Fetched approximate number of messages and service time', { approximateNumberOfMessages, averageClusterServiceTime });
+      logger.info('Fetched approximate number of messages and service time', { approximateNumberOfMessages, averageClusterServiceTime, averageClusterProcessingTime });
 
       const idealClusterSize = Math.ceil((approximateNumberOfMessages * averageClusterServiceTime) / (sla * parallelProcessingCapacity));
 
@@ -116,9 +114,7 @@ export async function main (event) {
             if (instanceStatus === 'running') {
               await sleep(30000); // 30 sec, wait after status changes to running
 
-              await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey, consumeQueueEventPath });
-
-              logger.info('Crawl process started on machine', { instanceId });
+              await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey, readBatchSize: parallelProcessingCapacity });
             } else {
               logger.warn('Instance failed creation', { instanceStatus });
             }

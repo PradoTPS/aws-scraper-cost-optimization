@@ -9,7 +9,6 @@ export default class InstancesHelper {
   static async getInstancesIds({ maximumNumberOfInstances, filters }) {
     const parameters = {
       Filters: filters,
-      ...maximumNumberOfInstances ? { MaxResults: maximumNumberOfInstances >= 5 ? maximumNumberOfInstances : 5 } : {}, // minimum is 5, if numberOfInstances is lower we treat it after
     };
 
     logger.info('Fetching instances', { ...parameters });
@@ -147,7 +146,12 @@ export default class InstancesHelper {
     return status;
   }
 
-  static async startQueueConsumeOnInstance({ instanceId, username = 'ec2-user', privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem', consumeQueueEventPath = 'tests/events/consumeQueue/default.json' } = {}) {
+  static async startQueueConsumeOnInstance({
+    instanceId,
+    username = 'ec2-user',
+    privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem',
+    readBatchSize = 5,
+  } = {}) {
     logger.info('Getting public dns of the provided instance', { instanceId });
 
     const {
@@ -170,8 +174,10 @@ export default class InstancesHelper {
       privateKey,
     });
 
-    logger.info('Run consume queue', { instanceId, username, privateKey });
+    const params = [`sls invoke local -f ConsumeQueue -d '{ "readBatchSize": ${readBatchSize} }'`, { cwd:'/home/ec2-user/aws-scraper-cost-optimization' }];
 
-    return ssh.execCommand(`sls invoke local -f ConsumeQueue -p ${consumeQueueEventPath}`, { cwd:'/home/ec2-user/aws-scraper-cost-optimization' });
+    logger.info('Run consume queue', { instanceId, username, privateKey, params });
+
+    return ssh.execCommand(...params);
   }
 }
