@@ -66,7 +66,7 @@ async function processMessages(messages, { cloudWatchHelper, instanceId }) {
 * @description Script function responsible for consuming ScrapingQueue and running scraper
 * @param {Object} event - Base lambda event
 * @param {Number} event.readBatchSize - Integer size indicating the number of messages to be read by batch
-* @command sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json
+* @command sls invoke local -f ConsumeQueue -p tests/events/consumeQueue/default.json
 */
 export async function main (event) {
   logger.setLevel('info');

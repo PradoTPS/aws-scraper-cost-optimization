@@ -55,6 +55,7 @@ async function getApproximateNumberOfMessages() {
 * @param {String} event.instanceType - Type of instances to create on orchestrator
 * @param {Number} event.parallelProcessingCapacity - Number indicating how many messages one instance can handle in parallel
 * @param {Number} event.maximumClusterSize - Maximum number of instances on cluster
+* @param {String} [event.consumeQueueEventPath = 'tests/events/consumeQueue/default.json'] - Path of consumeQueueEvent
 * @param {String} [event.privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem'] - String indicating path to EC2 privateKey
 */
 export async function main (event) {
@@ -65,6 +66,7 @@ export async function main (event) {
     instanceType,
     parallelProcessingCapacity,
     privateKey,
+    consumeQueueEventPath,
     maximumClusterSize,
   } = event;
 
@@ -114,7 +116,7 @@ export async function main (event) {
             if (instanceStatus === 'running') {
               await sleep(30000); // 30 sec, wait after status changes to running
 
-              await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey });
+              await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey, consumeQueueEventPath });
 
               logger.info('Crawl process started on machine', { instanceId });
             } else {

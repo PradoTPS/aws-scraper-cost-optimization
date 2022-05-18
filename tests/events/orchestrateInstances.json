@@ -3,5 +3,6 @@
   "instanceType": "t2.medium",
   "parallelProcessingCapacity": 5,
   "maximumClusterSize": 2,
+  "consumeQueueEventPath": "tests/events/consumeQueue/default.json",
   "privateKey": "/home/marotti/.ssh/scraper-instance-key-pair.pem"
 }

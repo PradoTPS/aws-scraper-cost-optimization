@@ -147,7 +147,7 @@ export default class InstancesHelper {
     return status;
   }
 
-  static async startQueueConsumeOnInstance({ instanceId, username = 'ec2-user', privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem' } = {}) {
+  static async startQueueConsumeOnInstance({ instanceId, username = 'ec2-user', privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem', consumeQueueEventPath = 'tests/events/consumeQueue/default.json' } = {}) {
     logger.info('Getting public dns of the provided instance', { instanceId });
 
     const {
@@ -172,6 +172,6 @@ export default class InstancesHelper {
 
     logger.info('Run consume queue', { instanceId, username, privateKey });
 
-    return ssh.execCommand('sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json', { cwd:'/home/ec2-user/aws-scraper-cost-optimization' });
+    return ssh.execCommand(`sls invoke local -f ConsumeQueue -p ${consumeQueueEventPath}`, { cwd:'/home/ec2-user/aws-scraper-cost-optimization' });
   }
 }
