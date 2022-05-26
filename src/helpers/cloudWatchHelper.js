@@ -1,6 +1,7 @@
 import logger from 'loglevel';
-import { CloudWatchLogs } from 'aws-sdk';
+import { CloudWatch, CloudWatchLogs } from 'aws-sdk';
 
+const cloudwatch = new CloudWatch({ apiVersion: '2010-08-01' });
 const cloudwatchLogs = new CloudWatchLogs({ apiVersion: '2014-03-28' });
 
 export default class CloudWatchHelper {
@@ -45,6 +46,22 @@ export default class CloudWatchHelper {
     }
 
     return true;
+  }
+
+  static async getLastMetric({ metricDataQuery }) {
+    const now = new Date();
+
+    const {
+      MetricDataResults: [{
+        Values: [metricData],
+      }],
+    } = await cloudwatch.getMetricData({
+      EndTime: now.toISOString(),
+      StartTime:  new Date(now - 180000).toISOString(), /// 3 minutes ago
+      MetricDataQueries: [metricDataQuery],
+    }).promise();
+
+    return metricData;
   }
 
   static async getLogMessages({ startTime, filterPattern } = {}) {

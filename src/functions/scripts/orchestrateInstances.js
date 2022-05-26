@@ -73,8 +73,10 @@ export async function main (event) {
   let currentCost = 0;
   let currentIteration = 0;
 
-  const interval = Math.ceil((sla / 1000) / 4);
-  const cron = `0/${interval} * * * * *`; // runs every sla / 4 seconds
+  const cronInterval = Math.ceil(sla / 4);
+  const cronIntervalInSeconds = Math.ceil(cronInterval / 1000);
+
+  const cron = `0/${cronIntervalInSeconds} * * * * *`; // runs every sla / 4 seconds
 
   logger.info('Started orchestration function', { sla, instanceType, parallelProcessingCapacity, cron });
 
@@ -93,7 +95,7 @@ export async function main (event) {
       if (currentIteration > 0) {
         const activeInstanceTypes = clusterInstances.map((instance) => instance.InstanceType);
 
-        for (const activeInstanceType of activeInstanceTypes) currentCost += (ec2Pricing[activeInstanceType] / 3600) * interval;
+        for (const activeInstanceType of activeInstanceTypes) currentCost += (ec2Pricing[activeInstanceType] / 3600) * cronIntervalInSeconds;
       }
 
       logger.info('Started verification function', { startedAt: new Date(), currentIteration, currentCost });
@@ -104,8 +106,31 @@ export async function main (event) {
 
       // 30 sec, default value if system recently started running
       averageClusterServiceTime = averageClusterServiceTime || 30000;
+      const queueName = process.env.SCRAPING_QUEUE_URL.split('/').pop();
 
-      logger.info('Fetched approximate number of messages and service time', { approximateNumberOfMessages, averageClusterServiceTime, averageClusterProcessingTime });
+      const approximateAgeOfOldestMessageInSeconds = await CloudWatchHelper.getLastMetric({
+        metricDataQuery: {
+          Id: 'approximateAgeOfOldestMessage',
+          MetricStat: {
+            Metric: {
+              Dimensions: [
+                {
+                  Name: 'QueueName',
+                  Value:  queueName
+                },
+              ],
+              MetricName: 'ApproximateAgeOfOldestMessage',
+              Namespace: 'AWS/SQS'
+            },
+            Period: 60,
+            Stat: 'Maximum',
+          },
+        }
+      });
+
+      const approximateAgeOfOldestMessage = approximateAgeOfOldestMessageInSeconds * 1000;
+
+      logger.info('Fetched approximate number of messages, age of oldest message and average service time', { approximateNumberOfMessages, approximateAgeOfOldestMessage, averageClusterServiceTime, averageClusterProcessingTime });
 
       const idealClusterSize = Math.ceil((approximateNumberOfMessages * averageClusterServiceTime) / (sla * parallelProcessingCapacity));
 
@@ -137,7 +162,11 @@ export async function main (event) {
 
         Promise.all(startCrawlPromises);
       } else if (newClusterSize < actualClusterSize) {
-        await InstancesHelper.terminateInstances({ numberOfInstances: actualClusterSize - newClusterSize });
+        if (approximateAgeOfOldestMessage < sla) {
+          await InstancesHelper.terminateInstances({ numberOfInstances: actualClusterSize - newClusterSize });
+        } else {
+          logger.warn('Will not reduce cluster because oldest message is greater then SLA', { approximateAgeOfOldestMessage, sla });
+        }
       }
 
       currentIteration+=1;
