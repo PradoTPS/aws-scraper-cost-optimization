@@ -29,6 +29,7 @@ custom:
       - Utils: src/utils
       - Helpers: src/helpers
       - Scrapers: src/scrapers
+      - Constants: src/constants
       - Functions: src/functions
 
 functions:

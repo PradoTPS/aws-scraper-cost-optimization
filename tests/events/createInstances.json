@@ -1,3 +1,4 @@
 {
-  "numberOfInstances": 1
+  "numberOfInstances": 1,
+  "instanceType": "t2.micro"
 }

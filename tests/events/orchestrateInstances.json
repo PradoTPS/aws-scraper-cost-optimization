@@ -1,7 +1,1 @@
-{
-  "sla": 300000,
-  "instanceType": "t2.medium",
-  "parallelProcessingCapacity": 10,
-  "maximumClusterSize": 3,
-  "privateKey": "/home/marotti/.ssh/scraper-instance-key-pair.pem"
-}
+{ "sla": 300000, "instanceType": "t2.medium", "parallelProcessingCapacity": 10, "maximumClusterSize": 5, "privateKey": "/home/marotti/.ssh/scraper-instance-key-pair.pem" }

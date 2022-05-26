@@ -4,6 +4,8 @@ import { CronJob } from 'cron';
 
 import sleep from 'Utils/sleep';
 
+import ec2Pricing from 'Constants/ec2Pricing';
+
 import InstancesHelper from 'Helpers/instancesHelper';
 import CloudWatchHelper from 'Helpers/cloudWatchHelper';
 
@@ -52,9 +54,9 @@ async function getApproximateNumberOfMessages() {
 * @description Script function responsible for orchestrating instances
 * @param {Object} event - Base lambda event
 * @param {Number} event.sla - Integer size indicating the SLA (Service Level Agreement) time in milliseconds
-* @param {String} event.instanceType - Type of instances to create on orchestrator
 * @param {Number} event.parallelProcessingCapacity - Number indicating how many messages one instance can handle in parallel
 * @param {Number} event.maximumClusterSize - Maximum number of instances on cluster
+* @param {String} [event.instanceType ='t2.small'] - Type of instances to create on orchestrator
 * @param {String} [event.privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem'] - String indicating path to EC2 privateKey
 */
 export async function main (event) {
@@ -62,24 +64,43 @@ export async function main (event) {
 
   const {
     sla,
-    instanceType,
+    instanceType =  't2.small',
     parallelProcessingCapacity,
     privateKey,
     maximumClusterSize,
   } = event;
 
-  const cron = `0/${Math.ceil((sla / 1000) / 4)} * * * * *`; // runs every sla / 4 milliseconds
+  let currentCost = 0;
+  let currentIteration = 0;
+
+  const interval = Math.ceil((sla / 1000) / 4);
+  const cron = `0/${interval} * * * * *`; // runs every sla / 4 seconds
 
   logger.info('Started orchestration function', { sla, instanceType, parallelProcessingCapacity, cron });
 
   const job = new CronJob(
     cron,
     async function() {
-      logger.info('Started verification function', { startedAt: new Date() });
+      const clusterInstances = await InstancesHelper.getInstances({
+        filters: [
+          {
+            Name: 'instance-state-name',
+            Values: ['running', 'pending']
+          },
+        ],
+      });
+
+      if (currentIteration > 0) {
+        const activeInstanceTypes = clusterInstances.map((instance) => instance.InstanceType);
+
+        for (const activeInstanceType of activeInstanceTypes) currentCost += (ec2Pricing[activeInstanceType] / 3600) * interval;
+      }
+
+      logger.info('Started verification function', { startedAt: new Date(), currentIteration, currentCost });
 
       const approximateNumberOfMessages = await getApproximateNumberOfMessages();
 
-      let { averageClusterServiceTime, averageClusterProcessingTime } = await getClusterMetrics(this.lastDate().getTime());
+      let { averageClusterServiceTime, averageClusterProcessingTime } = await getClusterMetrics();
 
       // 30 sec, default value if system recently started running
       averageClusterServiceTime = averageClusterServiceTime || 30000;
@@ -90,14 +111,7 @@ export async function main (event) {
 
       const newClusterSize = Math.min(maximumClusterSize, idealClusterSize);
 
-      const actualClusterSize = (await InstancesHelper.getInstancesIds({
-        filters: [
-          {
-            Name: 'instance-state-name',
-            Values: ['running', 'pending']
-          },
-        ],
-      })).length;
+      const actualClusterSize = clusterInstances.length;
 
       logger.info('Fetched ideal numberOfInstances', { idealClusterSize, actualClusterSize, newClusterSize });
 
@@ -125,6 +139,8 @@ export async function main (event) {
       } else if (newClusterSize < actualClusterSize) {
         await InstancesHelper.terminateInstances({ numberOfInstances: actualClusterSize - newClusterSize });
       }
+
+      currentIteration+=1;
 
       return true;
     }

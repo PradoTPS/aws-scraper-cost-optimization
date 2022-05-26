@@ -4,6 +4,7 @@
     "paths": {
       "Scrapers": ["./src/scrapers/*"],
       "Utils": ["./src/utils"],
+      "Constants": ["./src/constants"],
       "Helpers": ["./src/helpers"]
     }
   }

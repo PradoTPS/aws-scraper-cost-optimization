@@ -6,7 +6,7 @@ import { NodeSSH } from 'node-ssh';
 const ec2 = new EC2({ apiVersion: '2016-11-15' });
 
 export default class InstancesHelper {
-  static async getInstancesIds({ maximumNumberOfInstances, filters }) {
+  static async getInstances({ maximumNumberOfInstances, filters }) {
     const parameters = {
       Filters: filters,
     };
@@ -17,20 +17,18 @@ export default class InstancesHelper {
       Reservations: reservations,
     } = await ec2.describeInstances(parameters).promise();
 
-    const instanceIds = reservations.reduce(
-      (ids, { Instances: instances = [] }) => {
-        return [...ids, ...instances.map((instance) => instance.InstanceId)];
+    const instances = reservations.reduce(
+      (instancesAccumulator, { Instances: currentInstances = [] }) => {
+        return [...instancesAccumulator, ...currentInstances];
       },
       [],
     );
 
-    const slicedInstanceIds = maximumNumberOfInstances && instanceIds.length > maximumNumberOfInstances
-                                        ? instanceIds.slice(0, maximumNumberOfInstances)
-                                        : instanceIds;
+    const slicedInstances = maximumNumberOfInstances && instances.length > maximumNumberOfInstances
+                                        ? instances.slice(0, maximumNumberOfInstances)
+                                        : instances;
 
-    logger.info('Fetched instances', { instanceIds, slicedInstanceIds  });
-
-    return slicedInstanceIds;
+    return slicedInstances;
   }
 
   static async createInstances({ numberOfInstances = 1, instanceType = 't2.small' } = {}) {
@@ -71,7 +69,7 @@ export default class InstancesHelper {
 
   static async terminateInstances({ instanceIds, numberOfInstances } = {}) {
     if (!instanceIds?.length && numberOfInstances) {
-      instanceIds = await this.getInstancesIds({
+      const instances = await this.getInstances({
         maximumNumberOfInstances: numberOfInstances,
         filters: [
           {
@@ -84,6 +82,8 @@ export default class InstancesHelper {
           },
         ],
       });
+
+      instanceIds = instances.map((instance) => instance.ImageId);
     }
 
     if (instanceIds?.length) {
