@@ -39,7 +39,7 @@ export async function main (event) {
 
   const defaultMessage = {
     type: 'coren',
-    name: 'sp',
+    name: 'rj',
     informations: {
       registrationNumber: '1109410'
     }

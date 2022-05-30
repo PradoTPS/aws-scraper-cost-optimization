@@ -23,7 +23,7 @@ export default async function launchBrowser () {
 
   return chromium.puppeteer.launch({
     args: chromium.args,
-    headless: true,
+    headless: false,
     executablePath,
   });
 };
