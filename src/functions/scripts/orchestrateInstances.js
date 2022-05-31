@@ -11,9 +11,7 @@ import CloudWatchHelper from 'Helpers/cloudWatchHelper';
 
 const sqs = new SQS({ apiVersion: '2012-11-05' });
 
-async function getClusterMetrics() {
-  const startTime = Date.now() - (30 * 60000); // 10 minutes ago
-
+async function getClusterMetrics({ startTime }) {
   logger.info('Fetching cluster metrics', { startTime: new Date(startTime) });
 
   const messages = await CloudWatchHelper.getLogMessages({
@@ -73,6 +71,8 @@ export async function main (event) {
   let currentCost = 0;
   let currentIteration = 0;
 
+  const startTime = Date.now();
+
   const cronInterval = Math.ceil(sla / 4);
   const cronIntervalInSeconds = Math.ceil(cronInterval / 1000);
 
@@ -102,10 +102,10 @@ export async function main (event) {
 
       const approximateNumberOfMessages = await getApproximateNumberOfMessages();
 
-      let { averageClusterServiceTime, averageClusterProcessingTime } = await getClusterMetrics();
+      let { averageClusterServiceTime, averageClusterProcessingTime } = await getClusterMetrics({ startTime });
 
       // 30 sec, default value if system recently started running
-      averageClusterServiceTime = averageClusterServiceTime || 30000;
+      averageClusterServiceTime = averageClusterServiceTime || 20000;
       const queueName = process.env.SCRAPING_QUEUE_URL.split('/').pop();
 
       const approximateAgeOfOldestMessageInSeconds = await CloudWatchHelper.getLastMetric({

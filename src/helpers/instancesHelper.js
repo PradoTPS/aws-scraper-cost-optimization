@@ -83,7 +83,7 @@ export default class InstancesHelper {
         ],
       });
 
-      instanceIds = instances.map((instance) => instance.ImageId);
+      instanceIds = instances.map((instance) => instance.InstanceId);
     }
 
     if (instanceIds?.length) {
