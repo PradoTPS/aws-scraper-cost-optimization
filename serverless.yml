@@ -15,7 +15,7 @@ provider:
     SCRAPING_RESULT_BUCKET: !Ref ScrapingResultBucket
     CLUSTER_LOG_GROUP_NAME: !Ref ClusterLogGroup
     SECURITY_GROUP_NAME: !Ref ScraperSecurityGroup
-    IMAGE_ID: ami-0ddcf504c145a71fe # hard codded because it can only be accessed via !GetAtt (not supported by serverless)
+    IMAGE_ID: ami-00257a32f2de4a732 # hard codded because it can only be accessed via !GetAtt (not supported by serverless)
     EC2_KEY_NAME: scraper-instance-key-pair  # key pair created at the AWS Console, because it's not supported by AWS Cloudformation
 
 custom:
