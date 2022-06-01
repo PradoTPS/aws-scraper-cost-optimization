@@ -15,16 +15,24 @@ async function getClusterMetrics({ startTime }) {
   logger.info('Fetching cluster metrics', { startTime: new Date(startTime) });
 
   const messages = await CloudWatchHelper.getLogMessages({
-    filterPattern: '{ ($.instanceId != "local") && ($.averageMessageServiceTime = *) && ($.averageMessageProcessingTime = *)}',
+    filterPattern: '{ ($.instanceId != "local") && ($.averageMessageServiceTime = *) && ($.averageMessageProcessingTime = *) && ($.messageProcessingTimeVariance = *)}',
     startTime,
   });
 
-  const [averageClusterServiceTimeAccumulator, averageClusterProcessingTimeAccumulator] = messages.reduce(
+  const [
+    averageClusterServiceTimeAccumulator,
+    averageClusterProcessingTimeAccumulator,
+    messageProcessingTimeVarianceAccumulator,
+  ] = messages.reduce(
     function(
-      [averageMessageServiceTimeAccumulator, averageMessageProcessingTimeAccumulator],
-      { averageMessageServiceTime, averageMessageProcessingTime }
+      [averageMessageServiceTimeAccumulator, averageMessageProcessingTimeAccumulator, messageProcessingTimeVarianceAccumulator],
+      { averageMessageServiceTime, averageMessageProcessingTime, messageProcessingTimeVariance }
     ) {
-      return [averageMessageServiceTimeAccumulator + averageMessageServiceTime, averageMessageProcessingTimeAccumulator + averageMessageProcessingTime];
+      return [
+        averageMessageServiceTimeAccumulator + averageMessageServiceTime,
+        averageMessageProcessingTimeAccumulator + averageMessageProcessingTime,
+        messageProcessingTimeVarianceAccumulator + messageProcessingTimeVariance,
+      ];
     },
     [0, 0],
   );
@@ -32,6 +40,7 @@ async function getClusterMetrics({ startTime }) {
   return {
     averageClusterServiceTime: averageClusterServiceTimeAccumulator / messages.length,
     averageClusterProcessingTime: averageClusterProcessingTimeAccumulator / messages.length,
+    averageClusterProcessingTimeVariance: messageProcessingTimeVarianceAccumulator / messages.length,
   };
 }
 
@@ -102,7 +111,11 @@ export async function main (event) {
 
       const approximateNumberOfMessages = await getApproximateNumberOfMessages();
 
-      let { averageClusterServiceTime, averageClusterProcessingTime } = await getClusterMetrics({ startTime });
+      let {
+        averageClusterServiceTime,
+        averageClusterProcessingTime,
+        averageClusterProcessingTimeVariance,
+      } = await getClusterMetrics({ startTime });
 
       // 30 sec, default value if system recently started running
       averageClusterServiceTime = averageClusterServiceTime || 20000;
@@ -130,7 +143,16 @@ export async function main (event) {
 
       const approximateAgeOfOldestMessage = approximateAgeOfOldestMessageInSeconds * 1000;
 
-      logger.info('Fetched approximate number of messages, age of oldest message and average service time', { approximateNumberOfMessages, approximateAgeOfOldestMessage, averageClusterServiceTime, averageClusterProcessingTime });
+      logger.info(
+        'Fetched approximate number of messages, age of oldest message and average service time',
+        {
+          approximateNumberOfMessages,
+          approximateAgeOfOldestMessage,
+          averageClusterServiceTime,
+          averageClusterProcessingTime,
+          averageClusterProcessingTimeVariance,
+        }
+      );
 
       const idealClusterSize = Math.ceil((approximateNumberOfMessages * averageClusterServiceTime) / (sla * parallelProcessingCapacity));
 
