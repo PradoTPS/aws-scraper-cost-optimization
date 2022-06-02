@@ -15,32 +15,41 @@ async function getClusterMetrics({ startTime }) {
   logger.info('Fetching cluster metrics', { startTime: new Date(startTime) });
 
   const messages = await CloudWatchHelper.getLogMessages({
-    filterPattern: '{ ($.instanceId != "local") && ($.averageMessageServiceTime = *) && ($.averageMessageProcessingTime = *) && ($.messageProcessingTimeVariance = *)}',
+    filterPattern: '{ ($.instanceId != "local") && ($.averageMessageServiceTime = *) && ($.averageMessageProcessingTime = *)}',
     startTime,
   });
 
   const [
     averageClusterServiceTimeAccumulator,
     averageClusterProcessingTimeAccumulator,
-    messageProcessingTimeVarianceAccumulator,
   ] = messages.reduce(
     function(
-      [averageMessageServiceTimeAccumulator, averageMessageProcessingTimeAccumulator, messageProcessingTimeVarianceAccumulator],
-      { averageMessageServiceTime, averageMessageProcessingTime, messageProcessingTimeVariance }
+      [averageMessageServiceTimeAccumulator, averageMessageProcessingTimeAccumulator],
+      { averageMessageServiceTime, averageMessageProcessingTime }
     ) {
       return [
         averageMessageServiceTimeAccumulator + averageMessageServiceTime,
         averageMessageProcessingTimeAccumulator + averageMessageProcessingTime,
-        messageProcessingTimeVarianceAccumulator + messageProcessingTimeVariance,
       ];
     },
     [0, 0],
   );
 
+  const averageClusterServiceTime = averageClusterServiceTimeAccumulator / messages.length;
+  const averageClusterProcessingTime = averageClusterProcessingTimeAccumulator / messages.length;
+
+  const messageProcessingTimeDeviationAccumulator = messages.reduce(
+    messageProcessingTimeDeviationAccumulator,
+    ({ averageMessageProcessingTime }) => messageProcessingTimeDeviationAccumulator + (averageMessageProcessingTime - averageClusterProcessingTime) ^ 2,
+    0,
+  );
+
+  const averageClusterProcessingTimeVariance = messageProcessingTimeDeviationAccumulator / messages.length;
+
   return {
-    averageClusterServiceTime: averageClusterServiceTimeAccumulator / messages.length,
-    averageClusterProcessingTime: averageClusterProcessingTimeAccumulator / messages.length,
-    averageClusterProcessingTimeVariance: messageProcessingTimeVarianceAccumulator / messages.length,
+    averageClusterServiceTime,
+    averageClusterProcessingTime,
+    averageClusterProcessingTimeVariance,
   };
 }
 
@@ -173,7 +182,7 @@ export async function main (event) {
             const instanceStatus = await InstancesHelper.waitInstanceFinalStatus({ instanceId });
 
             if (instanceStatus === 'running') {
-              await sleep(30000); // 30 sec, wait after status changes to running
+              await sleep(40000); // 40 sec, wait after status changes to running
 
               await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey, readBatchSize: parallelProcessingCapacity });
             } else {
