@@ -1,8 +1,11 @@
 import logger from 'loglevel';
+
 import { SQS } from 'aws-sdk';
 import { CronJob } from 'cron';
 
 import sleep from 'Utils/sleep';
+import writeJson from 'Utils/writeJson';
+import generateLineChart from 'Utils/generateLineChart';
 
 import ec2Pricing from 'Constants/ec2Pricing';
 
@@ -39,8 +42,7 @@ async function getClusterMetrics({ startTime }) {
   const averageClusterProcessingTime = averageClusterProcessingTimeAccumulator / messages.length;
 
   const messageProcessingTimeDeviationAccumulator = messages.reduce(
-    messageProcessingTimeDeviationAccumulator,
-    ({ averageMessageProcessingTime }) => messageProcessingTimeDeviationAccumulator + (averageMessageProcessingTime - averageClusterProcessingTime) ^ 2,
+    (accumulator, { averageMessageProcessingTime }) => accumulator + (averageMessageProcessingTime - averageClusterProcessingTime) ^ 2,
     0,
   );
 
@@ -63,7 +65,7 @@ async function getApproximateNumberOfMessages() {
     AttributeNames: ['ApproximateNumberOfMessages']
   }).promise();
 
-  return approximateNumberOfMessages;
+  return parseInt(approximateNumberOfMessages);
 }
 
 /**
@@ -73,6 +75,7 @@ async function getApproximateNumberOfMessages() {
 * @param {Number} event.parallelProcessingCapacity - Number indicating how many messages one instance can handle in parallel
 * @param {Number} event.maximumClusterSize - Maximum number of instances on cluster
 * @param {String} [event.instanceType ='t2.small'] - Type of instances to create on orchestrator
+* @param {String} resultsPath - Path where execution results will be saved
 * @param {String} [event.privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem'] - String indicating path to EC2 privateKey
 */
 export async function main (event) {
@@ -83,6 +86,7 @@ export async function main (event) {
     instanceType =  't2.small',
     parallelProcessingCapacity,
     privateKey,
+    resultsPath,
     maximumClusterSize,
   } = event;
 
@@ -90,6 +94,10 @@ export async function main (event) {
   let currentIteration = 0;
 
   const startTime = Date.now();
+
+  const clusterSizeRecords = []; // initial values will be added on first iteration
+  const processingTimeRecords = [[0, 0]];
+  const approximateNumberOfMessagesRecords = [[0, 0]];
 
   const cronInterval = Math.ceil(sla / 4);
   const cronIntervalInSeconds = Math.ceil(cronInterval / 1000);
@@ -114,6 +122,8 @@ export async function main (event) {
         const activeInstanceTypes = clusterInstances.map((instance) => instance.InstanceType);
 
         for (const activeInstanceType of activeInstanceTypes) currentCost += (ec2Pricing[activeInstanceType] / 3600) * cronIntervalInSeconds;
+      } else {
+        clusterSizeRecords.push([clusterInstances.length, 0]);
       }
 
       logger.info('Started verification function', { startedAt: new Date(), currentIteration, currentCost });
@@ -163,44 +173,93 @@ export async function main (event) {
         }
       );
 
-      const idealClusterSize = Math.ceil((approximateNumberOfMessages * averageClusterServiceTime) / (sla * parallelProcessingCapacity));
+      if (approximateNumberOfMessages) {
+        const idealClusterSize = Math.ceil((approximateNumberOfMessages * averageClusterServiceTime) / (sla * parallelProcessingCapacity));
 
-      const newClusterSize = Math.min(maximumClusterSize, idealClusterSize);
+        const newClusterSize = Math.min(maximumClusterSize, idealClusterSize);
 
-      const actualClusterSize = clusterInstances.length;
+        const actualClusterSize = clusterInstances.length;
 
-      logger.info('Fetched ideal numberOfInstances', { idealClusterSize, actualClusterSize, newClusterSize });
+        logger.info('Fetched ideal numberOfInstances', { idealClusterSize, actualClusterSize, newClusterSize });
 
-      if (newClusterSize > actualClusterSize) {
-        const newInstances = await InstancesHelper.createInstances({
-          numberOfInstances: newClusterSize - actualClusterSize,
-          instanceType
+        if (newClusterSize > actualClusterSize) {
+          const newInstances = await InstancesHelper.createInstances({
+            numberOfInstances: newClusterSize - actualClusterSize,
+            instanceType
+          });
+
+          const startCrawlPromises = newInstances.map(
+            async ({ instanceId }) => {
+              const instanceStatus = await InstancesHelper.waitInstanceFinalStatus({ instanceId });
+
+              if (instanceStatus === 'running') {
+                await sleep(40000); // 40 sec, wait after status changes to running
+
+                await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey, readBatchSize: parallelProcessingCapacity });
+              } else {
+                logger.warn('Instance failed creation', { instanceStatus });
+              }
+            }
+          );
+
+          Promise.all(startCrawlPromises);
+        } else if (newClusterSize < actualClusterSize) {
+          if (approximateAgeOfOldestMessage < sla) {
+            await InstancesHelper.terminateInstances({ numberOfInstances: actualClusterSize - newClusterSize });
+          } else {
+            logger.warn('Will not reduce cluster because oldest message is greater then SLA', { approximateAgeOfOldestMessage, sla });
+          }
+        }
+
+        const currentTimestamp = (currentIteration + 1) * cronIntervalInSeconds;
+
+        clusterSizeRecords.push([newClusterSize, currentTimestamp]);
+        processingTimeRecords.push([averageClusterProcessingTime / 1000, currentTimestamp]);
+        approximateNumberOfMessagesRecords.push([approximateNumberOfMessages, currentTimestamp]);
+
+        currentIteration += 1;
+      } else {
+        const resultLabel = Date.now();
+
+        generateLineChart({
+          data: clusterSizeRecords.map(([x, _]) => x),
+          labels: clusterSizeRecords.map(([_, y]) => y),
+          path: resultsPath,
+          fileName: `cluster_size_${resultLabel}.jpg`,
+          lineLabel: 'Tamanho do Cluster x Tempo (s)',
         });
 
-        const startCrawlPromises = newInstances.map(
-          async ({ instanceId }) => {
-            const instanceStatus = await InstancesHelper.waitInstanceFinalStatus({ instanceId });
+        generateLineChart({
+          data: processingTimeRecords.map(([x, _]) => x),
+          labels: processingTimeRecords.map(([_, y]) => y),
+          path: resultsPath,
+          fileName: `processing_time_${resultLabel}.jpg`,
+          lineLabel: 'Tempo de médio processamento (s) x Tempo (s)'
+        });
 
-            if (instanceStatus === 'running') {
-              await sleep(40000); // 40 sec, wait after status changes to running
+        generateLineChart({
+          data: approximateNumberOfMessagesRecords.map(([x, _]) => x),
+          labels: approximateNumberOfMessagesRecords.map(([_, y]) => y),
+          path: resultsPath,
+          fileName: `approximate_number_of_messages_${resultLabel}.jpg`,
+          lineLabel: 'Número aproximado de mensagens x Tempo (s)'
+        });
 
-              await InstancesHelper.startQueueConsumeOnInstance({ instanceId, privateKey, readBatchSize: parallelProcessingCapacity });
-            } else {
-              logger.warn('Instance failed creation', { instanceStatus });
-            }
-          }
-        );
+        writeJson({
+          data:{
+            averageClusterServiceTime,
+            averageClusterProcessingTime,
 
-        Promise.all(startCrawlPromises);
-      } else if (newClusterSize < actualClusterSize) {
-        if (approximateAgeOfOldestMessage < sla) {
-          await InstancesHelper.terminateInstances({ numberOfInstances: actualClusterSize - newClusterSize });
-        } else {
-          logger.warn('Will not reduce cluster because oldest message is greater then SLA', { approximateAgeOfOldestMessage, sla });
-        }
+            clusterSizeRecords,
+            processingTimeRecords,
+            approximateNumberOfMessagesRecords,
+          },
+          path: resultsPath,
+          fileName: `execution_data_${resultLabel}.json`,
+        });
+
+        this.stop();
       }
-
-      currentIteration+=1;
 
       return true;
     }

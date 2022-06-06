@@ -45,15 +45,6 @@ async function processMessages(messages, { cloudWatchHelper, instanceId }) {
 
     const messageProcessingTimeVarianceOnBatch = totalMessageProcessingTimeDeviation / processedResults.length;
 
-    console.log({
-      totalMessageProcessingTime,
-      totalMessageServiceTime,
-      averageMessageProcessingTimeOnBatch,
-      averageMessageServiceTimeOnBatch,
-      totalMessageProcessingTimeDeviation,
-      messageProcessingTimeVarianceOnBatch,
-    });
-
     await cloudWatchHelper.logAndRegisterMessage(
       JSON.stringify({
         message: 'Messages successfully processed',
