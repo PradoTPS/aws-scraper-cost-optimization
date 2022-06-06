@@ -88,6 +88,8 @@ export async function main (event) {
   const startTime = Date.now();
 
   const clusterSizeRecords = []; // initial values will be added on first iteration
+  const creditBalanceRecords = []; // initial values will be added on first iteration
+
   const processingTimeRecords = [[0, 0]];
   const approximateNumberOfMessagesRecords = [[0, 0]];
 
@@ -110,12 +112,35 @@ export async function main (event) {
         ],
       });
 
+      const burstableInstanceId = clusterInstances.find((instance) => instance.InstanceType.includes('t3')).InstanceId;
+
+      const currentCreditBalance = await CloudWatchHelper.getLastMetric({
+        metricDataQuery: {
+          Id: 'cpuCreditBalance',
+          MetricStat: {
+            Metric: {
+              Dimensions: [
+                {
+                  Name: 'InstanceId',
+                  Value:  burstableInstanceId
+                },
+              ],
+              MetricName: 'CPUCreditBalance',
+              Namespace: 'AWS/EC2'
+            },
+            Period: 60,
+            Stat: 'Maximum',
+          },
+        }
+      });
+
       if (currentIteration > 0) {
         const activeInstanceTypes = clusterInstances.map((instance) => instance.InstanceType);
 
         for (const activeInstanceType of activeInstanceTypes) currentCost += (ec2Pricing[activeInstanceType] / 3600) * cronIntervalInSeconds;
       } else {
         clusterSizeRecords.push([clusterInstances.length, 0]);
+        creditBalanceRecords.push([currentCreditBalance, 0]);
       }
 
       logger.info('Started verification function', { startedAt: new Date(), currentIteration, currentCost });
@@ -160,6 +185,7 @@ export async function main (event) {
           approximateAgeOfOldestMessage,
           averageClusterServiceTime,
           averageClusterProcessingTime,
+          currentCreditBalance,
         }
       );
 
@@ -203,7 +229,9 @@ export async function main (event) {
 
         const currentTimestamp = (currentIteration + 1) * cronIntervalInSeconds;
 
+        // Update metric records
         clusterSizeRecords.push([newClusterSize, currentTimestamp]);
+        creditBalanceRecords.push([currentCreditBalance, currentTimestamp]);
         processingTimeRecords.push([averageClusterProcessingTime / 1000, currentTimestamp]);
         approximateNumberOfMessagesRecords.push([approximateNumberOfMessages, currentTimestamp]);
 
@@ -242,6 +270,14 @@ export async function main (event) {
           lineLabel: 'Número aproximado de mensagens x Tempo (s)'
         });
 
+        generateLineChart({
+          data: creditBalanceRecords.map(([x, _]) => x),
+          labels: creditBalanceRecords.map(([_, y]) => y),
+          path: resultsPath,
+          fileName: `credit_balance_${resultLabel}.jpg`,
+          lineLabel: 'Créditos de CPU x Tempo (s)'
+        });
+
         writeJson({
           data:{
             averageClusterServiceTime,
@@ -251,6 +287,7 @@ export async function main (event) {
             clusterSizeRecords,
             processingTimeRecords,
             approximateNumberOfMessagesRecords,
+            creditBalanceRecords,
           },
           path: resultsPath,
           fileName: `execution_data_${resultLabel}.json`,
