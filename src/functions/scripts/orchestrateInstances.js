@@ -41,17 +41,9 @@ async function getClusterMetrics({ startTime }) {
   const averageClusterServiceTime = averageClusterServiceTimeAccumulator / messages.length;
   const averageClusterProcessingTime = averageClusterProcessingTimeAccumulator / messages.length;
 
-  const messageProcessingTimeDeviationAccumulator = messages.reduce(
-    (accumulator, { averageMessageProcessingTime }) => accumulator + (averageMessageProcessingTime - averageClusterProcessingTime) ^ 2,
-    0,
-  );
-
-  const averageClusterProcessingTimeVariance = messageProcessingTimeDeviationAccumulator / messages.length;
-
   return {
     averageClusterServiceTime,
     averageClusterProcessingTime,
-    averageClusterProcessingTimeVariance,
   };
 }
 
@@ -133,7 +125,6 @@ export async function main (event) {
       let {
         averageClusterServiceTime,
         averageClusterProcessingTime,
-        averageClusterProcessingTimeVariance,
       } = await getClusterMetrics({ startTime });
 
       // 30 sec, default value if system recently started running
@@ -169,7 +160,6 @@ export async function main (event) {
           approximateAgeOfOldestMessage,
           averageClusterServiceTime,
           averageClusterProcessingTime,
-          averageClusterProcessingTimeVariance,
         }
       );
 
@@ -221,6 +211,13 @@ export async function main (event) {
       } else {
         const resultLabel = Date.now();
 
+        const clusterAverageProcessingTimeVariance = processingTimeRecords.reduce(
+          (accumulator, [processingTime]) => processingTime > 0
+                                              ? accumulator + ((processingTime - averageClusterProcessingTime) ^ 2)
+                                              : accumulator,
+          0,
+        ) / processingTimeRecords.length;
+
         generateLineChart({
           data: clusterSizeRecords.map(([x, _]) => x),
           labels: clusterSizeRecords.map(([_, y]) => y),
@@ -249,6 +246,7 @@ export async function main (event) {
           data:{
             averageClusterServiceTime,
             averageClusterProcessingTime,
+            clusterAverageProcessingTimeVariance,
 
             clusterSizeRecords,
             processingTimeRecords,
