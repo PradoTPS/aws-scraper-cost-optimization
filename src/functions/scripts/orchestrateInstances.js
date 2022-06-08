@@ -190,7 +190,7 @@ export async function main (event) {
       );
 
       if (approximateNumberOfMessages) {
-        const idealClusterSize = Math.ceil((approximateNumberOfMessages * averageClusterServiceTime) / (sla / parallelProcessingCapacity));
+        const idealClusterSize = Math.ceil((approximateNumberOfMessages * averageClusterServiceTime) / (sla * parallelProcessingCapacity));
 
         const newClusterSize = Math.min(maximumClusterSize, idealClusterSize);
 
