@@ -57,7 +57,7 @@ export default class CloudWatchHelper {
       }],
     } = await cloudwatch.getMetricData({
       EndTime: now.toISOString(),
-      StartTime:  new Date(now - 180000).toISOString(), /// 3 minutes ago
+      StartTime:  new Date(now - 360000).toISOString(), /// 6 minutes ago
       MetricDataQueries: [metricDataQuery],
     }).promise();
 

@@ -237,11 +237,11 @@ export async function main (event) {
 
         currentIteration += 1;
       } else {
-        const resultLabel = Date.now();
+        const resultLabel = 'a_low';
 
         const clusterAverageProcessingTimeVariance = processingTimeRecords.reduce(
           (accumulator, [processingTime]) => processingTime > 0
-                                              ? accumulator + ((processingTime - averageClusterProcessingTime) ^ 2)
+                                              ? accumulator + ((processingTime - (averageClusterProcessingTime / 1000)) ^ 2)
                                               : accumulator,
           0,
         ) / processingTimeRecords.length;
@@ -275,14 +275,16 @@ export async function main (event) {
           labels: creditBalanceRecords.map(([_, y]) => y),
           path: resultsPath,
           fileName: `credit_balance_${resultLabel}.jpg`,
-          lineLabel: 'Créditos de CPU x Tempo (s)'
+          lineLabel: 'Créditos de CPU x Tempo (s)',
+          yAxesUnstacked: false,
         });
 
         writeJson({
           data:{
-            averageClusterServiceTime,
-            averageClusterProcessingTime,
+            averageClusterServiceTime: averageClusterServiceTime / 1000, // to seconds
+            averageClusterProcessingTime: averageClusterProcessingTime / 1000, // to seconds
             clusterAverageProcessingTimeVariance,
+            cost: currentCost,
 
             clusterSizeRecords,
             processingTimeRecords,
