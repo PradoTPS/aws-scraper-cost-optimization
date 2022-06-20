@@ -42,6 +42,7 @@ functions:
   - ${file(sls/functions/scripts/terminateInstances.yml)}
   - ${file(sls/functions/scripts/orchestrateInstances.yml)}
   - ${file(sls/functions/scripts/startQueueConsumeOnInstance.yml)}
+  - ${file(sls/functions/scripts/generateChart.yml)}
 
 resources:
   # S3

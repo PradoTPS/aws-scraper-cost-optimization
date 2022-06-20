@@ -1,0 +1,2 @@
+GenerateChart:
+  handler: src/functions/scripts/generateChart.main

@@ -258,6 +258,7 @@ export async function main (event) {
           data: processingTimeRecords.map(([x, _]) => x),
           labels: processingTimeRecords.map(([_, y]) => y),
           path: resultsPath,
+          annotation: sla / 1000,
           fileName: `processing_time_${resultLabel}.jpg`,
           lineLabel: 'Tempo de médio processamento (s) x Tempo (s)'
         });
