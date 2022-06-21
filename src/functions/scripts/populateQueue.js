@@ -38,10 +38,10 @@ export async function main (event) {
   } = event;
 
   const defaultMessage = {
-    type: 'coren',
-    name: 'rj',
+    type: 'esaj',
+    name: 'sp',
     informations: {
-      registrationNumber: '1109410'
+      cpf: '17475170705'
     }
   };
 

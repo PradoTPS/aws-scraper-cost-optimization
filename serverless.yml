@@ -15,7 +15,7 @@ provider:
     SCRAPING_RESULT_BUCKET: !Ref ScrapingResultBucket
     CLUSTER_LOG_GROUP_NAME: !Ref ClusterLogGroup
     SECURITY_GROUP_NAME: !Ref ScraperSecurityGroup
-    IMAGE_ID: ami-093df9d0065f95119 # hard codded because it can only be accessed via !GetAtt (not supported by serverless)
+    IMAGE_ID: 	ami-0c65e643476841eeb # hard codded because it can only be accessed via !GetAtt (not supported by serverless)
     EC2_KEY_NAME: scraper-instance-key-pair  # key pair created at the AWS Console, because it's not supported by AWS Cloudformation
 
 custom:
@@ -49,7 +49,7 @@ resources:
   - ${file(sls/resources/s3/scrapingResultBucket.yml)}
   # EC2
   - ${file(sls/resources/ec2/scraperSecurityGroup.yml)}
-  - ${file(sls/resources/ec2/scraperInstance.yml)}
+  # - ${file(sls/resources/ec2/scraperInstance.yml)}
   # SQS
   - ${file(sls/resources/sqs/scrapingQueue.yml)}
   # CLOUDWATCH

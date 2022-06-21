@@ -71,6 +71,6 @@
   ],
   "path": "/home/marotti/Projects/uff/aws-scraper-cost-optimization/results",
   "fileName": "processing_time_a_high.jpg",
-  "lineLabel": "Tamanho do Cluster x Tempo (s)",
+  "lineLabel": "Tempo de médio processamento (s) x Tempo (s)",
   "annotation": 300
 }

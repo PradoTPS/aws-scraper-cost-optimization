@@ -112,7 +112,7 @@ export async function main (event) {
         ],
       });
 
-      const burstableInstanceId = clusterInstances.find((instance) => instance.InstanceType.includes('t3')).InstanceId;
+      // const burstableInstanceId = clusterInstances.find((instance) => instance.InstanceType.includes('t3')).InstanceId;
 
       const currentCreditBalance = await CloudWatchHelper.getLastMetric({
         metricDataQuery: {
@@ -122,7 +122,7 @@ export async function main (event) {
               Dimensions: [
                 {
                   Name: 'InstanceId',
-                  Value:  burstableInstanceId
+                  Value:  'i-07754dbb83c7cd667'
                 },
               ],
               MetricName: 'CPUCreditBalance',
@@ -230,14 +230,14 @@ export async function main (event) {
         const currentTimestamp = (currentIteration + 1) * cronIntervalInSeconds;
 
         // Update metric records
-        clusterSizeRecords.push([newClusterSize, currentTimestamp]);
+        clusterSizeRecords.push([actualClusterSize, currentTimestamp]);
         creditBalanceRecords.push([currentCreditBalance, currentTimestamp]);
         processingTimeRecords.push([averageClusterProcessingTime / 1000, currentTimestamp]);
         approximateNumberOfMessagesRecords.push([approximateNumberOfMessages, currentTimestamp]);
 
         currentIteration += 1;
       } else {
-        const resultLabel = 'a_low';
+        const resultLabel = 'a2_medium';
 
         const clusterAverageProcessingTimeVariance = processingTimeRecords.reduce(
           (accumulator, [processingTime]) => processingTime > 0
