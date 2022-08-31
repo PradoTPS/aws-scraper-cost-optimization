@@ -1,90 +1,13 @@
 <!--
-title: 'AWS NodeJS Example'
-description: 'This template demonstrates how to deploy a NodeJS function running on AWS Lambda using the traditional Serverless Framework.'
-layout: Doc
-framework: v2
-platform: AWS
-language: nodeJS
-priority: 1
-authorLink: 'https://github.com/serverless'
-authorName: 'Serverless, inc.'
-authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
+title: 'Web Scraping na Nuvem AWS: Uma Abordagem com Máquinas Virtuais Burstable'
+description: 'This work describes a Web Scraping framework based on burstable virtual machines of AWS to reduce financial costs while meeting a given deadline. The framework defines a mixed cluster, with  fixed and temporary burstable virtual machines. That cluster can be elastically increased or decreased by varying the  instances of the  set of  temporary burstable VMs, to meet the  scraping requests SLA and reduce the financial cost.
+    
+The proposed framework was evaluated in the AWS cloud environment and compared to an entirely on-demand instances cluster (regular approach) and also to a FaaS-based approach. It was able of reducing the financial cost by up to 96\% when compared to the FaaS approach, and by up to 95.59\%  when compared to the regular approach in the best cases. In addition, in all other cases, it achieved at least 93,26\% of cost savings, showing that burstable instances can be an excellent tool for this problem.'
 -->
 
 
-# Serverless Framework AWS NodeJS Example
+# Web Scraping na Nuvem AWS: Uma Abordagem com Máquinas Virtuais Burstable
 
-This template demonstrates how to deploy a NodeJS function running on AWS Lambda using the traditional Serverless Framework. The deployed function does not include any event definitions as well as any kind of persistence (database). For more advanced configurations check out the [examples repo](https://github.com/serverless/examples/) which includes integrations with SQS, DynamoDB or examples of functions that are triggered in `cron`-like manner. For details about configuration of specific `events`, please refer to our [documentation](https://www.serverless.com/framework/docs/providers/aws/events/).
-
-## Usage
-
-### Deployment
-
-In order to deploy the example, you need to run the following command:
-
-```
-$ serverless deploy
-```
-
-After running deploy, you should see output similar to:
-
-```bash
-Serverless: Packaging service...
-Serverless: Excluding development dependencies...
-Serverless: Creating Stack...
-Serverless: Checking Stack create progress...
-........
-Serverless: Stack create finished...
-Serverless: Uploading CloudFormation file to S3...
-Serverless: Uploading artifacts...
-Serverless: Uploading service aws-node.zip file to S3 (711.23 KB)...
-Serverless: Validating template...
-Serverless: Updating Stack...
-Serverless: Checking Stack update progress...
-.................................
-Serverless: Stack update finished...
-Service Information
-service: aws-node
-stage: dev
-region: us-east-1
-stack: aws-node-dev
-resources: 6
-functions:
-  api: aws-node-dev-hello
-layers:
-  None
-```
-
-### Invocation
-
-After successful deployment, you can invoke the deployed function by using the following command:
-
-```bash
-serverless invoke --function hello
-```
-
-Which should result in response similar to the following:
-
-```json
-{
-    "statusCode": 200,
-    "body": "{\n  \"message\": \"Go Serverless v2.0! Your function executed successfully!\",\n  \"input\": {}\n}"
-}
-```
-
-### Local development
-
-You can invoke your function locally by using the following command:
-
-```bash
-serverless invoke local --function hello
-```
-
-Which should result in response similar to the following:
-
-```
-{
-    "statusCode": 200,
-    "body": "{\n  \"message\": \"Go Serverless v2.0! Your function executed successfully!\",\n  \"input\": \"\"\n}"
-}
-```
+This work describes a Web Scraping framework based on burstable virtual machines of AWS to reduce financial costs while meeting a given deadline. The framework defines a mixed cluster, with  fixed and temporary burstable virtual machines. That cluster can be elastically increased or decreased by varying the  instances of the  set of  temporary burstable VMs, to meet the  scraping requests SLA and reduce the financial cost.
+    
+The proposed framework was evaluated in the AWS cloud environment and compared to an entirely on-demand instances cluster (regular approach) and also to a FaaS-based approach. It was able of reducing the financial cost by up to 96\% when compared to the FaaS approach, and by up to 95.59\%  when compared to the regular approach in the best cases. In addition, in all other cases, it achieved at least 93,26\% of cost savings, showing that burstable instances can be an excellent tool for this problem.
