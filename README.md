@@ -20,6 +20,7 @@ The proposed framework was evaluated in the AWS cloud environment and compared t
 To run and test this project, you will need:
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 - [Node 14 or later and npm](https://heynode.com/tutorial/install-nodejs-locally-nvm/)
+- Serverless v2 (`npm i serverless@2 -g`)
 
 ### Credentials
 Once you have everything installed, you will need to set your aws credentials.
