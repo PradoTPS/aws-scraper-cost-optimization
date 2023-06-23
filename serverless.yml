@@ -7,7 +7,7 @@ plugins:
 provider:
   name: aws
   region: us-east-1
-  profile: matheus-thiago-tcc
+  profile: aws-scraper
   runtime: nodejs14.x
   lambdaHashingVersion: 20201221
   environment:

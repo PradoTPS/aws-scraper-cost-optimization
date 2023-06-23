@@ -20,10 +20,10 @@ Resources:
                 action: ExecuteBash
                 inputs:
                   commands:
-                    - aws configure set aws_access_key_id ${ssm:ec2-aws-access-key-id} --profile matheus-thiago-tcc
-                    - aws configure set aws_secret_access_key ${ssm:ec2-aws-secret-access-key} --profile matheus-thiago-tcc
-                    - runuser -l ec2-user -c 'aws configure set aws_access_key_id ${ssm:ec2-aws-access-key-id} --profile matheus-thiago-tcc'
-                    - runuser -l ec2-user -c 'aws configure set aws_secret_access_key ${ssm:ec2-aws-secret-access-key} --profile matheus-thiago-tcc'
+                    - aws configure set aws_access_key_id ${ssm:ec2-aws-access-key-id} --profile aws-scraper
+                    - aws configure set aws_secret_access_key ${ssm:ec2-aws-secret-access-key} --profile aws-scraper
+                    - runuser -l ec2-user -c 'aws configure set aws_access_key_id ${ssm:ec2-aws-access-key-id} --profile aws-scraper'
+                    - runuser -l ec2-user -c 'aws configure set aws_secret_access_key ${ssm:ec2-aws-secret-access-key} --profile aws-scraper'
 
   InstallChromeComponent:
     Type: 'AWS::ImageBuilder::Component'
