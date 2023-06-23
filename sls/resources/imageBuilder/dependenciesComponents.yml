@@ -111,7 +111,7 @@ Resources:
                   commands:
                     - sudo yum install git -y
                     - cd /home/ec2-user
-                    - git clone https://PradoTPS:${ssm:github-personal-token}@github.com/PradoTPS/aws-scraper-cost-optimization.git
+                    - git clone https://github.com/PradoTPS/aws-scraper-cost-optimization.git
                     - sudo chmod -R 777 ./aws-scraper-cost-optimization/
                     - cd aws-scraper-cost-optimization
                     - rm package-lock.json
