@@ -2,4 +2,4 @@ Resources:
   ScrapingResultBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: ${self:service}-${AWS::AccountId}-scraping-result
+      BucketName: ${self:service}-${aws:accountId}-scraping-result
