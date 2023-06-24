@@ -45,3 +45,56 @@ To accomplish that, you will need to run some commands:
 - `sls deploy`
 
 The described commands clone this project, navigate to the project folder, install dependencies and start the deploy.
+
+## Running
+
+### Configure the orchestrator instance
+
+First you need to configure the main cluster instance to be able to run the project, we need to do that because at the time of creation of the instance the image (AMI) with it's dependencies is still being created via cloudformation.
+
+For this you need to [connect on the main instance using SSH](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html) and perform the same steps **Dependencies to run the project**, **Credentials**, **Cloning and Deploying** (without need of deploy) of the topic **Setting up**.
+
+### Run the orchestrate instances script on main instance
+
+After configuring the main machine, still connected on it with SSH, you need to run the script that will start the orchestration of instances, creating and deleting new one based on queue volume.
+
+First you must access the JSON file that will define the parameters for the script execution. For that access the path _tests/events/orchestrateInstances.json_ on project and edit the attributes based on your needs.
+
+* @param {Number} sla - Integer size indicating the SLA (Service Level Agreement) time in milliseconds
+* @param {Number} parallelProcessingCapacity - Number indicating how many messages one instance can handle in parallel
+* @param {Number} maximumClusterSize - Maximum number of instances on cluster
+* @param {String} [instanceType ='t2.small'] - Type of instances that orchestrator will create
+* @param {String} resultsPath - Path where execution results will be saved
+* @param {String} [privateKey = '/home/ec2-user/aws-scraper-cost-optimization/local/scraper-instance-key-pair.pem'] - String indicating path to EC2 privateKey
+
+After defining your attributes you can run the script using the serverless command: `sls invoke local -f OrchestrateInstances -p tests/events/orchestrateInstances.json`.
+
+All tests results will be saved on this machine as JSON and PNG files.
+
+### Run the consume queue script on main instance
+
+Now we can start consuming messages from the queue with the main instance (on instances created by the orchestrate instances script there is no need to do that because the script itself will start this process on new machines).
+
+First you must access the JSON file that will define the parameters for the script execution. For that access the path _tests/events/consumeQueue.json_ on project and edit the attributes based on your needs.
+
+* @param {Number} readBatchSize - Integer size indicating the number of messages to be read by batch
+
+After defining your attributes you can run the script using the serverless command: `sls invoke local -f ConsumeQueue -p tests/events/consumeQueue.json`.
+
+### Run the populate queue script on your machine
+
+At this point we have the main instance running the orchestrate instances script (that will evaluate the system needs for creating or deleting instances) and the consume queue script (that will fetch messages from queue and proccess then, dealing with the scrapping request).
+
+Now we just need to start populating the queue with new requests, this can be done at your own local machine.
+
+First you must access the JSON file that will define the parameters for the script execution. For that access the path _tests/events/populateQueue.json_ on project and edit the attributes based on your needs.
+
+* @param {Number} batchSize - Integer size indicating the number of messages sent by batch
+* @param {Number} numberOfBatches - Integer size indicating the number of batches to be sent
+* @param {Number} delay - Integer time in milliseconds indicating the delay between batches
+
+To edit the format of requests that will be sent to queue you can access the file _src/functions/scripts/populateQueue.js_ and edit the variable _defaultMessage_ defined at main function.
+
+After defining your attributes you can run the script using the serverless command: `sls invoke local -f PopulateQueue -p tests/events/populateQueue.json`.
+
+That will start to put requests on the queue and you should be able to see the messages starting to be consumed on the logs of your main instance.
