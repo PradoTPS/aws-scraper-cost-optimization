@@ -1,16 +1,10 @@
-<!--
-title: 'Web Scraping na Nuvem AWS: Uma Abordagem com Máquinas Virtuais Burstable'
-description: 'This work describes a Web Scraping framework based on burstable virtual machines of AWS to reduce financial costs while meeting a given deadline. The framework defines a mixed cluster, with  fixed and temporary burstable virtual machines. That cluster can be elastically increased or decreased by varying the  instances of the  set of  temporary burstable VMs, to meet the  scraping requests SLA and reduce the financial cost.
-    
-The proposed framework was evaluated in the AWS cloud environment and compared to an entirely on-demand instances cluster (regular approach) and also to a FaaS-based approach. It was able of reducing the financial cost by up to 96\% when compared to the FaaS approach, and by up to 95.59\%  when compared to the regular approach in the best cases. In addition, in all other cases, it achieved at least 93,26\% of cost savings, showing that burstable instances can be an excellent tool for this problem.'
--->
-
-
 # Web Scraping in the AWS: An Approach with Burstable Virtual Machines
 
 This work describes a Web Scraping framework based on burstable virtual machines of AWS to reduce financial costs while meeting a given deadline. The framework defines a mixed cluster, with  fixed and temporary burstable virtual machines. That cluster can be elastically increased or decreased by varying the  instances of the  set of  temporary burstable VMs, to meet the  scraping requests SLA and reduce the financial cost.
     
 The proposed framework was evaluated in the AWS cloud environment and compared to an entirely on-demand instances cluster (regular approach) and also to a FaaS-based approach. It was able of reducing the financial cost by up to 96\% when compared to the FaaS approach, and by up to 95.59\%  when compared to the regular approach in the best cases. In addition, in all other cases, it achieved at least 93,26\% of cost savings, showing that burstable instances can be an excellent tool for this problem.
+
+![](architecture_v2.jpg)
 
 ## Setting up
 
@@ -33,8 +27,8 @@ This project creates all necessary resources through AWS CloudFormation except:
 
 To create these resources, you will need login to your AWS account at the [AWS Console](https://console.aws.amazon.com/) and access the following pages:
 - [EC2 Home > Key Pairs](https://us-east-1.console.aws.amazon.com/ec2/home#KeyPairs:) and click on the "Create key pair" button. You will need to create your key pair with **"scraper-instance-key-pair"** as name (without quotes).
-- [Systems Manager > Parameter Store](https://us-east-1.console.aws.amazon.com/systems-manager/parameters/) and click on the "Create parameter" button. You will need to create your parameter with **"ec2-aws-access-key-id"** as name (without quotes). This parameter also needs to be String type, Data type text and with the same AWS Access Key Id you used to set up your local environment as value.
-- [Systems Manager > Parameter Store](https://us-east-1.console.aws.amazon.com/systems-manager/parameters/) and click on the "Create parameter" button. You will need to create your parameter with **"ec2-aws-secret-access-key"** as name (without quotes). This parameter also needs to be String type, Data type text and with the same AWS Secret Access Key you used to set up your local environment as value.
+- [Systems Manager > Parameter Store](https://us-east-1.console.aws.amazon.com/systems-manager/parameters/) and click on the "Create parameter" button. You will need to create your parameter with the name **ec2-aws-access-key-id**. This parameter also needs to be String type. In the field Data type (text), paste the same AWS Access Key Id you used to set up your local environment (see credentials).
+- [Systems Manager > Parameter Store](https://us-east-1.console.aws.amazon.com/systems-manager/parameters/) and click on the "Create parameter" button. You will need to create your parameter with the name **ec2-aws-secret-access-key**. This parameter also needs to be String type. In the field Data type (text), paste the same AWS Secret Access Key you used to set up your local environment.
 
 ### Cloning and Deploying
 With all those steps done, now you can prepare to clone and deploy this project to your AWS account.
