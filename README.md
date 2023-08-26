@@ -1,5 +1,3 @@
-# Overview
-
 # Web Scraping in the AWS: An Approach with Burstable Virtual Machines
 
 This work describes a Web Scraping framework based on burstable virtual machines of AWS to reduce financial costs while meeting a given deadline. The framework defines a mixed cluster, with  fixed and temporary burstable virtual machines. That cluster can be elastically increased or decreased by varying the  instances of the  set of  temporary burstable VMs, to meet the  scraping requests SLA and reduce the financial cost.
